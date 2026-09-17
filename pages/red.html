@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red | HFCL</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/red.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/img/logo_hfcl.png">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="saas-body">
+
+<!-- DASHBOARD WORKSPACE -->
+<div class="saas-workspace">
+    
+    <!-- PANEL LATERAL DE CONTROL DE IPS -->
+    <aside class="saas-sidebar">
+        <div class="saas-sidebar-title">
+            <span><i class="fas fa-network-wired"></i> Control de IPs / Subred</span>
+        </div>
+        <div class="saas-search">
+            <input type="text" id="netSearchInput" placeholder="Filtrar por IP o Host..." oninput="filterNetworkNodes()">
+        </div>
+        
+        <!-- Pestañas de control de IPs con botones estandarizados -->
+        <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <button class="btn btn-secondary" style="flex:1; font-size: 0.65rem; padding: 6px; color: var(--success);" onclick="switchSidebarTab('nodes')">IPs Libres</button>
+            <button class="btn btn-secondary" style="flex:1; font-size: 0.65rem; padding: 6px; color: var(--accent);" onclick="switchSidebarTab('syslog')">IPs Ocupadas</button>
+        </div>
+
+        <div class="saas-nodes-list" id="netNodesListContainer" style="margin-top: 6px;"></div>
+    </aside>
+
+    <!-- ÁREA CENTRAL DE COMANDO -->
+    <main class="saas-main">
+        
+        <!-- Topología Superior Limpia -->
+        <div class="saas-topo-bar">
+            <div class="saas-topo-label"><i class="fas fa-project-diagram" style="color:var(--accent);"></i> Topología Troncal</div>
+            <div class="saas-topo-nodes" id="topologyBarContainer"></div>
+        </div>
+
+        <!-- Módulo de Chasis Principal Unificado -->
+        <div class="saas-chassis-container">
+            <div class="saas-chassis-header">
+                <div class="chassis-info-group" style="flex-wrap: wrap; gap: 8px;">
+                    <span class="chassis-name" id="activeNodeTitle">SW-PRINCIPAL-CORE</span>
+                    <span class="saas-meta-tag" id="activeIpBadge">10.66.50.1</span>
+                    <button id="nodePowerToggleBtn" class="saas-power-btn" onclick="toggleActiveNodePower()">ONLINE</button>
+                    <span class="saas-meta-tag" id="activeModelBadge" style="background: rgba(56, 189, 248, 0.08); color: var(--accent);">Catalyst 2960 Plus</span>
+                </div>
+                <div class="chassis-actions-group" style="font-family: monospace; font-size: 0.7rem; color: var(--text-muted); display: flex; gap: 10px;">
+                    <span id="headerSerial"><b>S/N:</b> --</span>
+                    <span id="headerMac"><b>MAC:</b> --</span>
+                    <span id="headerRev"><b>REV:</b> 02</span>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR ÚNICO LIMPIO -->
+            <div id="chassisPortsContainer" style="width: 100%;"></div>
+        </div>
+
+        <!-- Fila Inferior de Telemetría Rápida -->
+        <div class="saas-bottom-metrics-advanced">
+            <div class="saas-mini-widget">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Puertos Ocupados</span>
+                    <span style="font-size: 0.55rem; color: var(--accent); font-family: monospace;" id="portsMetricLabel">Global</span>
+                </div>
+                <div class="mini-chart-wrap"><canvas id="portsDoughnutChart"></canvas></div>
+            </div>
+            <div class="saas-mini-widget">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>IPs Subred 10.66.50.X</span>
+                    <span style="font-size: 0.55rem; color: var(--success); font-family: monospace;" id="ipsMetricLabel">Subred</span>
+                </div>
+                <div class="mini-chart-wrap"><canvas id="ipsDoughnutChart"></canvas></div>
+            </div>
+            <div class="saas-mini-widget">
+                <div style="display:flex; justify-content:space-between; font-size:0.5rem; margin-bottom:2px;">
+                    <span style="color:var(--accent);">Tráfico Troncal (Mbps)</span>
+                    <span id="bandwidthLabel" style="color:var(--text-muted);">27.2 Mbps</span>
+                </div>
+                <div class="mini-chart-wrap"><canvas id="liveBwChart"></canvas></div>
+            </div>
+            <div class="saas-mini-widget cli-console-widget">
+                <div class="cli-header-bar">
+                    <span><i class="fas fa-terminal" style="color:var(--accent);"></i> Consola CLI / Syslog</span>
+                    <span class="saas-meta-tag">HFC-Core#</span>
+                </div>
+                <div class="saas-terminal-screen" id="netTerminalScreen">
+                    <div><code>HFC-Core# ready. 'ping 10.66.50.1'</code></div>
+                </div>
+                <input type="text" id="netTerminalInput" placeholder="Escribe un comando..." onkeydown="handleNetTerminal(event)" class="saas-terminal-input">
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- PANEL DESLIZANTE DE CONFIGURACIÓN DE PUERTOS -->
+<div class="saas-drawer" id="portInspectorDrawer">
+    <div class="drawer-header">
+        <span><i class="fas fa-sliders-h"></i> Puerto <span id="inspectedPortNumber">#0</span></span>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button id="inspectedPortStateBtn" class="saas-power-btn" onclick="togglePortStatus()">HABILITADO</button>
+            <button class="drawer-close" onclick="closePortInspector()">✕</button>
+        </div>
+    </div>
+    <div class="drawer-body" id="portInspectorFormBody"></div>
+</div>
+
+<script src="../js/red.js"></script>
+
+<!-- MODAL DE FICHA TÉCNICA DE INVENTARIO (Estandarizado con la capa overlay del main.css) -->
+<div id="assetInventoryModal" class="modal-overlay">
+    <div style="background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 580px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        
+        <!-- Cabecera de la Ficha -->
+        <div style="background: var(--surface-main); padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--accent); font-weight: 700; font-family: monospace;">
+                <i class="fas fa-laptop-medical"></i> Ficha de Inventario • <span id="modalAssetIp">10.66.50.X</span>
+            </span>
+            
+            <!-- Botones de Acción (Editar y Cerrar) -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button id="editToggleBtn" onclick="toggleAssetEditMode()" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <i class="fas fa-lock" id="editToggleIcon"></i> <span id="editToggleText">Modo Lectura</span>
+                </button>
+                <div style="width: 1px; height: 14px; background: var(--border);"></div>
+                <button onclick="closeAssetInventoryModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+            </div>
+        </div>
+
+        <div class="drawer-body" id="assetInventoryFormBody" style="padding: 16px; overflow-y: auto; flex: 1;"></div>
+    </div>
+</div>
+
+<!-- MODAL DE GESTIÓN RÁPIDA APs E IMPRESORAS -->
+<div class="saas-drawer" id="managedDevicesModal" style="width: 480px; right: -500px;">
+    <div class="drawer-header">
+        <span><i class="fas fa-print"></i> Dispositivos Web (AP & Impresoras)</span>
+        <button class="drawer-close" onclick="closeManagedModal()">✕</button>
+    </div>
+    <div class="drawer-body" id="managedDevicesBody" style="padding: 16px; overflow-y: auto;"></div>
+</div>
+
+<!-- VENTANA FLOTANTE DE ALERTA DE SEGURIDAD (PORT SECURITY / MAC NUEVA) -->
+<div id="securityAlertModal" class="saas-drawer" style="width: 420px; right: -450px; background: #1a0f0f; border-left: 2px solid var(--danger); z-index: 2000;">
+    <div class="drawer-header" style="border-bottom-color: rgba(239, 68, 68, 0.3);">
+        <span style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> ¡Alerta de Seguridad en Red!</span>
+        <button class="drawer-close" onclick="closeSecurityAlert()">✕</button>
+    </div>
+    <div class="drawer-body" style="padding: 16px; color: #f8fafc;">
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+            <div style="font-size: 0.65rem; font-weight: 700; color: var(--danger); margin-bottom: 4px;">Dispositivo Desconocido Detectado</div>
+            <p style="font-size: 0.55rem; color: #cbd5e1; line-height: 1.4;">Se ha interceptado una dirección física (MAC) intentando asociarse a la subred activa sin registro previo en los switches del hospital.</p>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.6rem; background: var(--surface-main); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+            <div><span style="color: var(--text-muted);">MAC Detectada:</span> <b id="alertMacVal" style="color: var(--danger);">AA:BB:CC:DD:EE:FF</b></div>
+            <div><span style="color: var(--text-muted);">IP Asignada:</span> <b id="alertIpVal" style="color: var(--accent);">10.66.50.88</b></div>
+            <div><span style="color: var(--text-muted);">Puerto Estimado:</span> <b id="alertPortVal">Rack P1-B / Puerto #4</b></div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button class="btn btn-primary" style="flex: 1; background: var(--danger); border-color: var(--danger); font-size: 0.65rem; padding: 8px;" onclick="blockUnauthorizedDevice()">Bloquear Puerto (ErrDisable)</button>
+            <button class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 8px;" onclick="closeSecurityAlert()">Ignorar / Registrar</button>
+        </div>
+    </div>
+</div>
+    <script src="../data/auth.js"></script>
+    <script src="../data/navbar.js"></script>
+    <script src="../js/red.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Espacios y Auditorio | HFCL Lanco</title>
+    
+    <!-- CSS Global e Íconos -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="../assets/img/logo_hfcl.png">
+</head>
+<body style="background-color: #f1f5f9; display: flex; flex-direction: column; min-height: 100vh; margin: 0;">
+
+    <!-- 🌐 LAYOUT PRINCIPAL DE 2 COLUMNAS -->
+    <div style="max-width: 1700px; width: 100%; margin: 25px auto; padding: 0 20px; display: grid; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; flex: 1;">
+        
+        <!-- COLUMNA IZQUIERDA: Formulario de Solicitud de Reserva -->
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <div style="width: 40px; height: 40px; background: #e0f2fe; color: #0284c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; font-size: 1rem; color: #0f172a;">Nueva Solicitud</h2>
+                    <span style="font-size: 0.75rem; color: #64748b;">Agendar Sala o Auditorio</span>
+                </div>
+            </div>
+
+            <form id="formReserva" style="display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Espacio a Reservar</label>
+                    <select id="reservaEspacio" style="padding: 9px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-size: 0.85rem;" required>
+                        <option value="Auditorio Principal">🏛️ Auditorio Principal</option>
+                        <option value="Sala de Reuniones Dirección">🏢 Sala de Reuniones Dirección</option>
+                        <option value="Sala Capacitación TIC">💻 Sala Capacitación TIC</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Motivo / Actividad</label>
+                    <input type="text" id="reservaMotivo" placeholder="Ej: Capacitación IAAS, Reunión de Servicio..." style="padding: 9px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-size: 0.85rem;" required>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Solicitante / Responsable</label>
+                    <input type="text" id="reservaSolicitante" placeholder="Tu nombre y servicio" style="padding: 9px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-size: 0.85rem;" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Fecha</label>
+                        <input type="date" id="reservaFecha" style="padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-size: 0.85rem;" required>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">Bloque Horario</label>
+                        <select id="reservaBloque" style="padding: 9px; border-radius: 6px; border: 1px solid #cbd5e1; outline: none; font-size: 0.85rem;" required>
+                            <option value="Mañana (08:30 - 13:00)">Mañana (08:30 - 13:00)</option>
+                            <option value="Tarde (14:00 - 17:00)">Tarde (14:00 - 17:00)</option>
+                            <option value="Día Completo">Día Completo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 8px;">
+                    <i class="fas fa-check-circle"></i> Confirmar Reserva
+                </button>
+            </form>
+        </div>
+
+        <!-- COLUMNA DERECHA: Listado y Calendario de Reservas Activas -->
+        <main style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); min-height: 550px; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: #0f172a;"><i class="fas fa-clipboard-list" style="color: #0284c7;"></i> Reservas Vigentes y Agendadas</h3>
+                <span id="contadorReservas" style="font-size: 0.8rem; background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 6px; font-weight: 600;">0 registradas</span>
+            </div>
+
+            <!-- Contenedor dinámico donde aparecerán las reservas guardadas -->
+            <div id="listaReservasContainer" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 500px;">
+                <p style="text-align: center; color: #94a3b8; padding: 40px; margin: 0;">No hay espacios reservados actualmente. ¡Crea la primera solicitud a la izquierda!</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script de control local -->
+    <script src="../js/reservas.js"></script>
+    <script src="../data/auth.js"></script>
+    <script src="../data/navbar.js"></script>
+    <script src="../data/footer.js"></script>
+</body>
+</html>

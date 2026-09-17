@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Telefónica | HFCL</title>
+    <!-- Estilos de la intranet principal -->
+    <link rel="stylesheet" href="../css/main.css">
+    <!-- Estilos específicos de la agenda -->
+    <link rel="stylesheet" href="../css/directorio.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../assets/img/logo_hfcl.png">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Pantalla de Carga Inicial -->
+    <div id="pagePreloader" class="preloader-overlay">
+        <div class="preloader-content">
+            <img src="../assets/img/logo_hfcl.png" alt="Logo HFCL Lanco" class="preloader-logo">
+            <h3>Agenda Telefónica</h3>
+            <p>Hospital Familiar y Comunitario de Lanco</p>
+            <div class="preloader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal Ampliado -->
+    <div class="container main-container">
+        
+        <!-- Sección Contactos Internos -->
+        <main id="internosSection">
+            <div class="main-layout">
+                <!-- Panel Lateral: Filtros + Vista + Favoritos -->
+                <aside class="sidebar-filters">
+                    
+                    <!-- 1. Caja de Filtros -->
+                    <div class="filter-box filter-box-vertical">
+                        <h3 class="filter-title"><i class="fas fa-filter"></i> Filtros y Búsqueda</h3>
+                        
+                        <div class="search-group">
+                            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                            <input type="text" id="searchInput" placeholder="Buscar por Nombre, Anexo...">
+                            <button type="button" id="clearSearch" class="clear-icon-btn" title="Limpiar búsqueda">
+                                <i class="fas fa-times-circle" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <select id="departmentFilter" class="full-width-input">
+                            <option value="">Todos los departamentos</option>
+                            <option value="Urgencias">Urgencias</option>
+                            <option value="Hospitalizados">Hospitalizados</option>
+                            <option value="Odontologia">Odontologia</option>
+                            <option value="Administración">Administración</option>
+                            <option value="Laboratorio">Laboratorio</option>
+                            <option value="SOME">SOME</option>
+                            <option value="Bodega">Bodega</option>
+                            <option value="Rehabilitacion">Rehabilitacion</option>
+                            <option value="Ambulatorio">Ambulatorio</option>
+                            <option value="APS">APS</option>
+                            <option value="TIC">TIC</option>
+                            <option value="Farmacia">Farmacia</option>
+                        </select>
+                        <select id="sortOrder" title="Ordenar por" class="full-width-input">
+                            <option value="az">Nombre (A - Z)</option>
+                            <option value="za">Nombre (Z - A)</option>
+                            <option value="dept">Por Unidad / Depto.</option>
+                            <option value="phone">Por Anexo</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Selector de Vista -->
+                    <div class="sidebar-view-box">
+                        <h4><i class="fas fa-eye icon-eye"></i> Tipo de Vista</h4>
+                        <div class="view-toggle">
+                            <button id="btnViewTable" class="view-btn flex-1-center" title="Vista en Tabla">
+                                <i class="fas fa-list" aria-hidden="true"></i> Tabla
+                            </button>
+                            <button id="btnViewCards" class="view-btn active flex-1-center" title="Vista en Tarjetas">
+                                <i class="fas fa-th-large" aria-hidden="true"></i> Tarjetas
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Cuadro de Favoritos -->
+                    <div id="favoritesSidebarBox" class="favorites-sidebar-box hidden">
+                        <h4><i class="fas fa-star icon-star"></i> Contactos Frecuentes</h4>
+                        <div id="favoritesContainer" class="favorites-list-container"></div>
+                    </div>
+                </aside>
+
+                <!-- Área de Contenido -->
+                <div class="content-area">
+                    <div id="tableContainerInternos" class="table-container hidden">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-star"></th>
+                                    <th>NOMBRE</th>
+                                    <th>CARGO</th>
+                                    <th>UNIDAD</th>
+                                    <th>UBICACIÓN</th>
+                                    <th>ANEXO</th>
+                                    <th class="col-admin-actions hidden">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactList"></tbody>
+                        </table>
+                    </div>
+                    <div id="cardsContainerInternos" class="cards-grid"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sección Contactos Externos -->
+        <section id="externosSection" class="hidden">
+            <div class="main-layout">
+                <aside class="sidebar-filters">
+                    <div class="filter-box filter-box-vertical">
+                        <h3 class="filter-title"><i class="fas fa-filter"></i> Filtros Externos</h3>
+                        
+                        <div class="search-group">
+                            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                            <input type="text" id="searchInputExternos" placeholder="Buscar en externos...">
+                            <button type="button" id="clearSearchExternos" class="clear-icon-btn" title="Limpiar búsqueda">
+                                <i class="fas fa-times-circle" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <select id="sortOrderExternos" title="Ordenar por" class="full-width-input">
+                            <option value="az">Nombre (A - Z)</option>
+                            <option value="za">Nombre (Z - A)</option>
+                            <option value="location">Por Ubicación / Centro</option>
+                        </select>
+                    </div>
+                    <div id="favoritesSidebarBoxExternos" class="favorites-sidebar-box hidden">
+                        <h4><i class="fas fa-star icon-star"></i> Contactos Frecuentes</h4>
+                        <div id="favoritesContainerExternos" class="favorites-list-container"></div>
+                    </div>
+                </aside>
+                <div class="content-area">
+                    <div id="tableContainerExternos" class="table-container hidden">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-star"></th>
+                                    <th>NOMBRE</th>
+                                    <th>UBICACIÓN / CENTRO</th>
+                                    <th>TELÉFONO</th>
+                                    <th class="col-admin-actions hidden">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactListExternos"></tbody>
+                        </table>
+                    </div>
+                    <div id="cardsContainerExternos" class="cards-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL DE EMERGENCIAS -->
+        <div id="modalEmergencias" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-shield-alt" aria-hidden="true"></i> Anexos de Emergencia y Contactos Críticos</h2>
+                    <button id="btnCloseModal" class="close-modal-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="emergency-grid">
+                        <div class="emergency-card">
+                            <span class="emerg-title"><i class="fas fa-user-md"></i> Triage / Admisión Urgencia</span>
+                            <span class="emerg-phone">63 4710</span>
+                            <span class="emerg-tag">Atención 24/7</span>
+                        </div>
+                        <div class="emergency-card">
+                            <span class="emerg-title"><i class="fas fa-laptop-medical"></i> Sala TIC / Turnante</span>
+                            <span class="emerg-phone">63 6168</span>
+                            <span class="emerg-tag">Soporte 24/7</span>
+                        </div>
+                        <div class="emergency-card">
+                            <span class="emerg-title"><i class="fas fa-desktop"></i> Oficina TIC</span>
+                            <span class="emerg-phone">63 6170</span>
+                            <span class="emerg-tag">Horario Hábil</span>
+                        </div>
+                        <div class="emergency-card">
+                            <span class="emerg-title"><i class="fas fa-hard-hat"></i> Prevención de Riesgos</span>
+                            <span class="emerg-phone">63 4657</span>
+                            <span class="emerg-tag">Horario Hábil</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DE FORMULARIO DE CONTACTO -->
+        <div id="modalContactForm" class="modal-overlay hidden">
+            <div class="modal-content form-modal">
+                <div class="modal-header">
+                    <h2 id="formModalTitle"><i class="fas fa-user-edit"></i> Editar Contacto</h2>
+                    <button id="btnCloseFormModal" class="close-modal-btn">&times;</button>
+                </div>
+                <form id="contactForm" class="modal-body form-body">
+                    <input type="hidden" id="formContactId">
+                    <input type="hidden" id="formContactType" value="internos">
+                    <div class="form-group">
+                        <label for="formName">Nombre:</label>
+                        <input type="text" id="formName" placeholder="Ej. Juan Pérez">
+                    </div>
+                    <div id="groupInternoOnly">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formPosition">Cargo / Función:</label>
+                                <input type="text" id="formPosition" placeholder="Ej. Enfermero Coordinador">
+                            </div>
+                            <div class="form-group">
+                                <label for="formDepartment">Departamento:</label>
+                                <input type="text" id="formDepartment" placeholder="Ej. TIC, Urgencias, APS">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="formEmail">Correo Electrónico:</label>
+                            <input type="email" id="formEmail" placeholder="ejemplo@redsalud.gob.cl">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="formSchedule">Horario de Atención:</label>
+                                <input type="text" id="formSchedule" placeholder="Ej. 08:00 - 17:00">
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <label><input type="checkbox" id="formIs247"> Atención 24/7</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="formLocation">Ubicación / Box / Centro:</label>
+                            <input type="text" id="formLocation" placeholder="Ej. Box 05 / HBV Valdivia">
+                        </div>
+                        <div class="form-group">
+                            <label for="formPhone">Anexo / Teléfono:</label>
+                            <input type="text" id="formPhone" required placeholder="Ej. 63 6170">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="btnCancelForm" class="btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL DE REPORTE DE ERRORES COMPACTO -->
+    <div id="modalReporteError" class="modal-overlay hidden">
+        <div class="modal-content form-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> Reportar Dato Incorrecto</h2>
+                <button id="btnCloseReporteModal" class="close-modal-btn">&times;</button>
+            </div>
+            <form id="reporteErrorForm" class="modal-body form-body">
+                <input type="hidden" id="reporteContactId">
+                <input type="hidden" id="reporteContactName">
+                <input type="hidden" id="reporteContactPhone">
+                <input type="hidden" id="reporteContactUnit">
+                <div class="form-group">
+                    <span style="font-weight: 700; color: #475569;">Contacto Afectado:</span>
+                    <div id="reporteTargetInfo" style="background: #e2e8f0; padding: 6px 10px; border-radius: 6px; font-weight: 700; color: #0f172a; font-size: 0.85rem;"></div>
+                </div>
+                <div class="form-group">
+                    <label for="reporteTipoError">Motivo del reporte:</label>
+                    <select id="reporteTipoError" class="full-width-input" required>
+                        <option value="">Selecciona una opción...</option>
+                        <option value="Anexo o Teléfono Incorrecto">Anexo o Teléfono Incorrecto</option>
+                        <option value="Funcionario Trasladado / Ya no pertenece a la unidad">Funcionario Trasladado / Inactivo</option>
+                        <option value="Error en Nombre o Cargo">Error en Nombre o Cargo</option>
+                        <option value="Otro">Otro Motivo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reporteComentario">Detalle o Corrección:</label>
+                    <textarea id="reporteComentario" rows="2" placeholder="Ej: El anexo correcto es el 63 6188..." class="full-width-input" style="border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="reporteNombreReportante">Tu Nombre / Anexo (Opcional):</label>
+                    <input type="text" id="reporteNombreReportante" placeholder="Ej. Juan de Informática">
+                </div>
+                <div class="form-actions" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px;">
+                    <button type="button" id="btnCancelReporte" class="btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="background: #0284c7; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.82rem;">
+                        <i class="fas fa-paper-plane"></i> Enviar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script de Reloj y Control del Navbar -->
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false };
+            const clockEl = document.getElementById('liveClock');
+            if(clockEl) clockEl.innerText = now.toLocaleDateString('es-CL', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+        function mostrarSeccionNavbar(seccion) {
+            const btnInt = document.getElementById('navBtnInternos');
+            const btnExt = document.getElementById('navBtnExternos');
+            if(seccion === 'internos') {
+                btnInt.classList.add('active-tab');
+                btnExt.classList.remove('active-tab');
+                mostrarSeccion('internos');
+            } else {
+                btnExt.classList.add('active-tab');
+                btnInt.classList.remove('active-tab');
+                mostrarSeccion('externos');
+            }
+        }
+    </script>
+    <script src="../data/auth.js"></script>
+    <script src="../js/directorio.js"></script>
+    <script src="../data/navbar.js"></script>
+    <script src="../data/footer.js"></script>
+</body>
+</html>

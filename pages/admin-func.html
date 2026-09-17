@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Personal | HFCL</title>
+    
+    <!-- 1. Librerías externas y Fuentes -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- 📊 IMPORTANTE: Agregar Chart.js aquí -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 2. Favicon Institucional -->
+    <link rel="icon" type="image/png" href="../assets/img/logo_hfcl.png">
+    
+    <!-- 3. Estilos Maestros y Específicos del Módulo -->
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/admin-func.css">
+
+    <!-- 4. Estilos locales de comportamiento de vistas -->
+    <style>
+        .vista-modulo { display: none !important; }
+        .vista-modulo.active { display: block !important; }
+        .tab-content { display: none !important; }
+        .tab-content.active { display: grid !important; }
+        .tab-catalogos-content { display: none !important; }
+        .tab-catalogos-content.active { display: block !important; }
+    </style>
+</head>
+<body>
+    <main>
+        <!-- 🧭 MENÚ LATERAL IZQUIERDO -->
+        <aside class="sidebar-nav">
+            <div>
+                <div class="nav-section-title">Módulos del Sistema</div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <button type="button" onclick="cambiarVistaModulo('funcionario')" id="navBtnFuncionario" class="nav-menu-item active">
+                        <i class="fas fa-id-card-alt" style="width: 18px;" aria-hidden="true"></i> Gestión Funcionario</button>
+                    <button type="button" onclick="cambiarVistaModulo('estadisticas')" id="navBtnEstadisticas" class="nav-menu-item">
+                        <i class="fas fa-chart-pie" style="width: 18px;" aria-hidden="true"></i> Estadísticas</button>
+                    <button type="button" onclick="cambiarVistaModulo('mapa')" id="navBtnMapa" class="nav-menu-item">
+                        <i class="fas fa-map-marked-alt" style="width: 18px;" aria-hidden="true"></i> Mapa Domiciliario</button>
+                    <button type="button" onclick="cambiarVistaModulo('otros')" id="navBtnOtros" class="nav-menu-item">
+                        <i class="fas fa-cubes" style="width: 18px;" aria-hidden="true"></i> Cargos y Unidades</button>
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--slate-300); margin: 4px 0;">
+
+            <div class="sidebar-section">
+                <small class="text-muted fw-bold" style="font-size: 0.7rem; color: var(--slate-600); font-weight: 700;">CONTACTOS RELACIONADOS</small>
+                <div id="contactosRelacionadosContainer" class="list-group list-group-flush" style="margin-top: 8px;">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--slate-300); margin: 4px 0;">
+            <div>
+                <div class="nav-section-title">Herramientas</div>
+                <button type="button" onclick="exportarDirectorioCSV()" class="nav-menu-item" style="color: var(--emerald);">
+                    <i class="fas fa-file-excel" style="width: 18px;" aria-hidden="true"></i> Exportar Directorio CSV
+                </button>
+            </div>
+        </aside>
+
+       <!-- 🏢 PANEL CENTRAL -->
+<section class="form-main-panel">
+    
+    <!-- Barra de Acciones Contextuales (Gestión Funcionario) -->
+    <div id="barraAccionesFuncionario" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--slate-100); padding-bottom: 12px; margin-bottom: 4px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div id="avatarHeaderPreview" style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.2); border: 2px solid white;">
+                <i class="fas fa-user" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h2 id="tituloFormFuncionario" style="margin: 0; font-size: 1rem; color: var(--slate-900); font-weight: 700;">Gestión de Funcionario</h2>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--slate-600);">Ficha institucional</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center;">
+            <button type="button" onclick="prepararNuevoFuncionario()" class="btn btn-success" style="font-size: 0.76rem;">
+                <i class="fas fa-plus" aria-hidden="true"></i> Nuevo
+            </button>
+            <button type="button" onclick="habilitarModoEdicion()" id="btnVistaEdicion" class="btn btn-light" style="font-size: 0.76rem;" title="Habilitar edición de campos">
+                <i class="fas fa-edit" aria-hidden="true"></i> Edición
+            </button>
+            <button type="button" onclick="guardarFuncionarioDB()" id="btnGuardarFuncionario" class="btn btn-primary" style="font-size: 0.76rem; display: none;">
+                <i class="fas fa-save" aria-hidden="true"></i> Guardar
+            </button>
+            <button type="button" onclick="cancelarEdicionFormulario()" id="btnCancelarFuncionario" class="btn btn-light" style="font-size: 0.76rem; display: none; background: #e2e8f0; color: #334155;" title="Cancelar cambios">
+                <i class="fas fa-times" aria-hidden="true"></i> Cancelar
+            </button>
+            <button type="button" onclick="eliminarFuncionarioActual()" id="btnEliminarFuncionario" class="btn" style="background: var(--rose); color: white; font-size: 0.76rem; display: none;" title="Eliminar registro actual">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
+            </button>
+        </div>
+    </div>
+
+    <!-- VISTA 1: GESTIÓN DE FUNCIONARIO -->
+    <div id="vistaModuloFuncionario" class="vista-modulo active">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--slate-200); margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+            <div class="tabs-container" role="tablist" style="border-bottom: none; margin-bottom: 0; flex: 1;">
+                <button type="button" role="tab" aria-selected="true" onclick="cambiarSolapaFicha('personales')" id="tabBtnPersonales" class="tab-btn active">
+                    <i class="fas fa-user" aria-hidden="true"></i> Datos Personales
+                </button>
+                <button type="button" role="tab" aria-selected="false" onclick="cambiarSolapaFicha('laboral')" id="tabBtnLaboral" class="tab-btn">
+                    <i class="fas fa-briefcase" aria-hidden="true"></i> Info. Laboral
+                </button>
+                <button type="button" role="tab" aria-selected="false" onclick="cambiarSolapaFicha('contacto')" id="tabBtnContacto" class="tab-btn">
+                    <i class="fas fa-map-marker-alt" aria-hidden="true"></i> Ubicación y Contacto
+                </button>
+                <button type="button" role="tab" aria-selected="false" onclick="cambiarSolapaFicha('permisos')" id="tabBtnPermisos" class="tab-btn">
+                    <i class="fas fa-lock" aria-hidden="true"></i> Accesos y Permisos
+                </button>
+                <button type="button" role="tab" aria-selected="false" onclick="cambiarSolapaFicha('vehiculo')" id="tabBtnVehiculo" class="tab-btn">
+                    <i class="fas fa-car" aria-hidden="true"></i> Vehículo
+                </button>
+            </div>
+
+            <div style="position: relative; min-width: 260px; margin-left: auto;">
+                <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem;" aria-hidden="true"></i>
+                <input type="text" id="inputBuscarFuncionario" aria-label="Buscar funcionario por RUT o nombre" placeholder="Buscar funcionario..." oninput="manejarBusquedaSugerencias(this.value)" style="width: 100%; padding: 8px 12px 8px 34px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.82rem; outline: none; background: #ffffff;">
+                <div id="sugerenciasContainer" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; max-height: 240px; overflow-y: auto; margin-top: 4px;"></div>
+            </div>
+        </div>
+
+        <form id="panelEdicionForm" onsubmit="event.preventDefault();">
+            <input type="hidden" id="funcEditId">
+
+            <!-- SOLAPA 1: PERSONALES -->
+            <div id="tabContentPersonales" class="tab-content active form-grid">
+                <div style="grid-column: span 2; display: flex; gap: 20px; align-items: flex-start; background: var(--slate-50); padding: 14px; border-radius: 8px; border: 1px solid var(--slate-300);">
+                    <div style="display: flex; justify-content: center; align-items: center; min-width: 80px; padding-top: 15px;">
+                        <div id="avatarFuncionarioPreview" style="width: 72px; height: 72px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; box-shadow: 0 3px 6px rgba(2, 132, 199, 0.25); border: 3px solid white; transition: background 0.3s ease;">
+                            <i class="fas fa-user" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                    <div style="flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <div class="form-group" style="grid-column: span 3;">
+                            <label for="funcRut">RUT (Identificador Único)</label>
+                            <input type="text" id="funcRut" class="auth-input" placeholder="Ej. 12345678-9">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label for="funcNombre">Nombre</label>
+                            <input type="text" id="funcNombre" class="auth-input" placeholder="Ej. Juan">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label for="funcApellidoPaterno">Apellido Paterno</label>
+                            <input type="text" id="funcApellidoPaterno" class="auth-input" placeholder="Ej. Pérez">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label for="funcApellidoMaterno">Apellido Materno</label>
+                            <input type="text" id="funcApellidoMaterno" class="auth-input" placeholder="Ej. Soto">
+                        </div>
+                        <div class="form-group" style="grid-column: span 1;">
+                            <label for="funcGenero">Género</label>
+                            <select id="funcGenero" class="auth-input">
+                                <option value="">Seleccione...</option>
+                                <option value="F">Femenino</option>
+                                <option value="M">Masculino</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label for="funcFechaNacimiento">Fecha de Nacimiento</label>
+                            <input type="date" id="funcFechaNacimiento" class="auth-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<!-- SOLAPA 2: LABORAL (Estructura de Jefaturas y Jerarquías) -->
+<div id="tabContentLaboral" class="tab-content form-grid">
+    
+    <!-- Fila 1: Estamento, Cargo y Unidad Básica -->
+    <div class="form-group">
+        <label for="funcEstamento">Estamento</label>
+        <select id="funcEstamento" class="auth-input">
+            <option value="">Seleccione estamento...</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="funcCargo">Cargo</label>
+        <select id="funcCargo" class="auth-input">
+            <option value="">Primero seleccione un estamento...</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="funcUnidad">Unidad / Servicio Base</label>
+        <select id="funcUnidad" class="auth-input">
+            <option value="">Primero seleccione un cargo...</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="funcFechaIngreso">Fecha Ingreso Institución</label>
+        <input type="date" id="funcFechaIngreso" class="auth-input">
+    </div>
+
+    <!-- SECCIÓN 1: DIRECCIÓN Y AUTORIDAD GLOBAL -->
+    <div class="form-group full" style="background: #fdf2f8; padding: 14px; border-radius: 8px; border: 1px solid #fbcfe8;">
+        <span style="margin-bottom: 10px; display: block; font-weight: 700; color: #be185d; font-size: 0.8rem;">
+            <i class="fas fa-crown" style="color: #ec4899;" aria-hidden="true"></i> Alta Dirección Institucional (Roles Únicos)
+        </span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+            <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #fbcfe8; display: flex; align-items: center;">
+                <label style="font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #be185d; width: 100%;">
+                    <input type="checkbox" id="funcEsDirector" style="accent-color: #ec4899;"> Director(a) Titular
+                </label>
+            </div>
+            <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #fbcfe8; display: flex; align-items: center;">
+                <label style="font-size: 0.78rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; color: #be185d; width: 100%;">
+                    <input type="checkbox" id="funcEsDirectorSubrogante" style="accent-color: #ec4899;"> Director(a) Subrogante (S)
+                </label>
+            </div>
+        </div>
+    </div>
+
+<!-- SECCIÓN 2: COORDINACIONES DE ENFERMERÍA (Oculta por defecto) -->
+<div id="seccionCoordinacionEnfermeria" class="form-group full" style="display: none; background: #f0fdf4; padding: 14px; border-radius: 8px; border: 1px solid #bbf7d0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; color: #166534; font-size: 0.8rem;">
+            <i class="fas fa-user-nurse" style="color: #22c55e;" aria-hidden="true"></i> Coordinación de Enfermería (Áreas Clínicas)
+        </span>
+        <span style="font-size: 0.68rem; color: #15803d; font-style: italic;">* Habilitado por rol de enfermería</span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px;">
+        <div style="background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <label style="font-size: 0.76rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #166534;"><input type="checkbox" class="chk-enf-coord" value="Pabellón" style="accent-color: #22c55e;"> Pabellón</label>
+        </div>
+        <div style="background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <label style="font-size: 0.76rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #166534;"><input type="checkbox" class="chk-enf-coord" value="Hospitalización" style="accent-color: #22c55e;"> Hospitalización</label>
+        </div>
+        <div style="background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <label style="font-size: 0.76rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #166534;"><input type="checkbox" class="chk-enf-coord" value="Urgencia" style="accent-color: #22c55e;"> Urgencia</label>
+        </div>
+        <div style="background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <label style="font-size: 0.76rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #166534;"><input type="checkbox" class="chk-enf-coord" value="APS" style="accent-color: #22c55e;"> Atención Primaria (APS)</label>
+        </div>
+        <div style="background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <label style="font-size: 0.76rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; color: #166534;"><input type="checkbox" class="chk-enf-coord" value="SAMU" style="accent-color: #22c55e;"> SAMU</label>
+        </div>
+    </div>
+</div>
+
+    <!-- SECCIÓN 3: JEFATURAS Y MULTICARGO (DEPARTAMENTOS Y UNIDADES) -->
+    <div class="form-group full" style="background: var(--slate-50); padding: 14px; border-radius: 8px; border: 1px solid var(--slate-300);">
+        <span style="margin-bottom: 12px; display: block; font-weight: 700; color: var(--slate-900); font-size: 0.8rem;">
+            <i class="fas fa-sitemap" style="color: var(--primary);" aria-hidden="true"></i> Asignación de Jefaturas (Soporta Multicargo) y Subrogancias
+        </span>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            
+            <!-- Bloque Jefatura Departamento -->
+            <div style="display: flex; flex-direction: column; gap: 6px; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="funcEsJefeDepto" onchange="toggleCampoJerarquia('Depto')"> Jefe(a) de Departamento
+                </label>
+                <select id="funcDetalleJefeDepto" aria-label="Seleccionar departamento de jefatura" class="auth-input" disabled style="background: var(--slate-50); font-size: 0.78rem; padding: 6px 10px;">
+                    <option value="">Seleccione departamento a cargo...</option>
+                </select>
+            </div>
+
+            <!-- Bloque Jefatura Unidad (Soporta Múltiples Unidades) -->
+            <div style="display: flex; flex-direction: column; gap: 6px; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="funcEsJefeUnidad" onchange="toggleCampoJerarquia('Unidad')"> Jefe(a) de Unidad(es) - <em>Permite Multicargo</em>
+                </label>
+                <div id="containerJefeUnidadesCheckboxes" style="max-height: 130px; overflow-y: auto; border: 1px solid var(--slate-300); border-radius: 6px; padding: 8px; background: var(--slate-50); display: flex; flex-direction: column; gap: 6px; opacity: 0.6; pointer-events: none;">
+                    <!-- Se cargará dinámicamente con JS desde el catálogo de unidades -->
+                    <span style="font-size: 0.73rem; color: var(--slate-500);">Habilite la casilla superior para marcar una o más unidades.</span>
+                </div>
+            </div>
+
+            <!-- Bloque Subrogancia Cruzada -->
+            <div style="display: flex; flex-direction: column; gap: 6px; background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="funcEsSubrogante" onchange="toggleCampoJerarquia('Subrogante')"> Subrogante (S) de Jefatura / Servicio
+                </label>
+                <select id="funcDetalleSubrogante" aria-label="Seleccionar unidad o servicio a subrogar" class="auth-input" disabled style="background: var(--slate-50); font-size: 0.78rem; padding: 6px 10px;">
+                    <option value="">Seleccione unidad/servicio a cubrir...</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+            <!-- SOLAPA 3: CONTACTO -->
+            <div id="tabContentContacto" class="tab-content form-grid">
+                <div class="section-title" style="grid-column: span 2; margin-top: 0;">
+                    <i class="fas fa-building" style="color: var(--primary);" aria-hidden="true"></i> Ubicación Institucional y Comunicación
+                </div>
+                <div class="form-group">
+                    <label for="funcAnexo">Anexo Telefónico</label>
+                    <input type="text" id="funcAnexo" class="auth-input" placeholder="Ej. 63 4696">
+                </div>
+                <div class="form-group">
+                    <label for="funcUbicacion">Ubicación / Oficina Física</label>
+                    <input type="text" id="funcUbicacion" class="auth-input" placeholder="Ej. Oficina TIC">
+                </div>
+                <div class="form-group full">
+                    <label for="funcCorreo">Correo Institucional</label>
+                    <input type="email" id="funcCorreo" class="auth-input" placeholder="nombre.apellido@redsalud.gob.cl">
+                </div>
+                <div class="section-title" style="grid-column: span 2; margin-top: 10px;">
+                    <i class="fas fa-home" style="color: var(--primary);" aria-hidden="true"></i> Domicilio del Funcionario
+                </div>
+                <div class="form-group">
+                    <label for="funcCiudad">Ciudad</label>
+                    <input type="text" id="funcCiudad" class="auth-input" value="Lanco" placeholder="Ej. Lanco">
+                </div>
+                <div class="form-group">
+                    <label for="funcDireccion">Dirección Particular</label>
+                    <input type="text" id="funcDireccion" class="auth-input" placeholder="Ej. Av. Centenario 450">
+                </div>
+            </div>
+
+            <!-- SOLAPA 4: PERMISOS -->
+            <div id="tabContentPermisos" class="tab-content form-grid">
+                <div class="form-group full">
+                    <label for="funcRol">Rol Principal de Sistema</label>
+                    <select id="funcRol" class="auth-input">
+                        <option value="">Seleccione rol...</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Editor">Editor</option>
+                        <option value="Turnante">Turnante</option>
+                        <option value="Consultor de Datos">Consultor de Datos</option>
+                    </select>
+                </div>
+                <div class="form-group full" style="background: var(--slate-50); padding: 14px; border-radius: 8px; border: 1px solid var(--slate-300);">
+                    <span style="margin-bottom: 12px; display: block; font-weight: 700; color: var(--slate-900); font-size: 0.8rem;">
+                        <i class="fas fa-network-wired" style="color: var(--primary);" aria-hidden="true"></i> Sistemas Asignados al Funcionario
+                    </span>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaSema"> SEMA</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaLme"> LME</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaRas"> RAS</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaRasUrgencia"> RAS Urgencia</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaBioslis"> BiosLIS</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaCore"> CORE</label>
+                        </div>
+                        <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--slate-300);">
+                            <label style="font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><input type="checkbox" id="funcSistemaRni"> RNI</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOLAPA 5: VEHÍCULO -->
+            <div id="tabContentVehiculo" class="tab-content form-grid">
+                <div class="section-title" style="grid-column: span 2; margin-top: 0;">
+                    <i class="fas fa-car" style="color: var(--primary);" aria-hidden="true"></i> Registro de Vehículo
+                </div>
+                <div class="form-group">
+                    <label for="funcVehiculoTipo">Tipo de Vehículo</label>
+                    <select id="funcVehiculoTipo" class="auth-input">
+                        <option value="">Sin vehículo</option>
+                        <option value="Automóvil">Automóvil</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Camioneta">Camioneta</option>
+                        <option value="Motocicleta">Motocicleta</option>
+                        <option value="Furgón">Furgón</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="funcVehiculoPatente">Patente</label>
+                    <input type="text" id="funcVehiculoPatente" class="auth-input" placeholder="Ej: AA-BB-12" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group">
+                    <label for="funcVehiculoMarca">Marca</label>
+                    <input type="text" id="funcVehiculoMarca" class="auth-input" placeholder="Ej: Toyota, Chevrolet, Honda">
+                </div>
+                <div class="form-group">
+                    <label for="funcVehiculoModelo">Modelo</label>
+                    <input type="text" id="funcVehiculoModelo" class="auth-input" placeholder="Ej: Yaris, Hilux, Civic">
+                </div>
+                <div class="form-group">
+                    <label for="funcVehiculoColor">Color</label>
+                    <input type="text" id="funcVehiculoColor" class="auth-input" placeholder="Ej: Gris Plata, Rojo, Blanco">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- VISTA 2: ESTADÍSTICAS -->
+<div id="vistaModuloEstadisticas" class="vista-modulo">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- Tarjetas KPI Superiores -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+            
+            <!-- Widget 1: Género (Barra Segmentada) -->
+            <div style="background: #ffffff; border: 1px solid var(--slate-300); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 0.7rem; font-weight: 700; color: var(--slate-600); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i class="fas fa-users" style="color: var(--primary);"></i> Distribución por Género
+                    </span>
+                    <span id="dashTotalPersonal" style="font-size: 0.7rem; font-weight: 700; color: var(--slate-500);">0 funcionarios</span>
+                </div>
+                <div style="width: 100%; height: 14px; background: #e2e8f0; border-radius: 7px; overflow: hidden; display: flex; margin: 4px 0 8px 0;">
+                    <div id="barSegmentoFem" style="width: 0%; background: #ec4899; height: 100%; transition: width 0.5s ease;"></div>
+                    <div id="barSegmentoMasc" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.5s ease;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+                    <span style="font-weight: 600; color: var(--slate-800);">Fem: <strong id="dashPorcentajeFemenino">0%</strong> (<span id="dashCantFemenino">0</span>)</span>
+                    <span style="font-weight: 600; color: var(--slate-800);">Masc: <strong id="dashPorcentajeMasculino">0%</strong> (<span id="dashCantMasculino">0</span>)</span>
+                </div>
+            </div>
+
+            <!-- Widget 2: Total Vehículos Registrados (Reemplaza Completitud) -->
+            <div style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: center;">
+                <span style="font-size: 0.7rem; font-weight: 700; opacity: 0.85; text-transform: uppercase;">
+                    <i class="fas fa-car"></i> Vehículos Registrados
+                </span>
+                <div id="dashTotalVehiculos" style="font-size: 1.5rem; font-weight: 700; margin-top: 4px;">0</div>
+                <span style="font-size: 0.68rem; opacity: 0.85;">Asociados al personal institucional</span>
+            </div>
+
+            <!-- Widget 3: Próximos a Jubilar (Desglosado) -->
+            <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: white; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+                <span style="font-size: 0.7rem; font-weight: 700; opacity: 0.85; text-transform: uppercase;">
+                    <i class="fas fa-user-clock"></i> Proyecciones de Jubilación
+                </span>
+                <div style="display: flex; justify-content: space-between; margin-top: 6px; text-align: center;">
+                    <div>
+                        <span style="font-size: 0.62rem; opacity: 0.85; display: block;">Año en curso</span>
+                        <strong id="dashJubilarActual" style="font-size: 1.1rem;">0</strong>
+                    </div>
+                    <div style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 8px;">
+                        <span style="font-size: 0.62rem; opacity: 0.85; display: block;">En 1 año</span>
+                        <strong id="dashJubilar1Anio" style="font-size: 1.1rem;">0</strong>
+                    </div>
+                    <div style="border-left: 1px solid rgba(255,255,255,0.3); padding-left: 8px;">
+                        <span style="font-size: 0.62rem; opacity: 0.85; display: block;">En 2 años</span>
+                        <strong id="dashJubilar2Anios" style="font-size: 1.1rem;">0</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Gráficos Estadísticos (4 en total) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 6px;">
+            
+            <!-- Gráfico 1: Estamento -->
+            <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-pie" style="color: #2563eb;" aria-hidden="true"></i> Estamentos
+                </h3>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="chartEstamento"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 2: Edades -->
+            <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-pie" style="color: #059669;" aria-hidden="true"></i> Edades
+                </h3>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="chartEdades"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 3: Unidades -->
+            <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-pie" style="color: #d97706;" aria-hidden="true"></i> Unidades / Servicios
+                </h3>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="chartUnidades"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráfico 4: Ciudades de Residencia (NUEVO) -->
+            <div style="background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-chart-pie" style="color: #8b5cf6;" aria-hidden="true"></i> Ciudades de Residencia
+                </h3>
+                <div style="position: relative; height: 220px;">
+                    <canvas id="chartCiudades"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 📊 TARJETA DE RESUMEN Y DISTRIBUCIÓN DE ANTIGÜEDAD -->
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    
+    <!-- Título Principal (Ocupa todo el ancho superior) -->
+    <h3 style="grid-column: 1 / -1; margin: 0 0 5px 0; color: #1e293b; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+        <i class="fas fa-chart-line" style="color: #0284c7;"></i> Indicadores Analíticos del Personal
+    </h3>
+    
+    <!-- Columna Izquierda: Métricas Demográficas y de Edad -->
+    <div style="display: flex; flex-direction: column; height: 100%;">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.88rem; color: #1e293b; font-weight: 700;">
+            <i class="fas fa-user-friends" style="color: #0284c7;"></i> Demografía y Edades
+        </h4>
+        <div id="resumenDemografiaTexto" style="font-size: 0.85rem; color: #334155; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; flex: 1;">
+            Calculando demografía...
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Métricas de Trayectoria e Institucionales -->
+    <div style="display: flex; flex-direction: column; height: 100%;">
+        <h4 style="margin: 0 0 10px 0; font-size: 0.88rem; color: #1e293b; font-weight: 700;">
+            <i class="fas fa-briefcase-medical" style="color: #10b981;"></i> Trayectoria e Infraestructura
+        </h4>
+        <div id="resumenTrayectoriaTexto" style="font-size: 0.85rem; color: #334155; line-height: 1.6; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; flex: 1;">
+            Calculando trayectoria...
+        </div>
+    </div>
+</div>
+<div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 16px;">
+    <h3 style="margin: 0 0 15px 0; color: #1e293b; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+        <i class="fas fa-trophy" style="color: #f59e0b;" aria-hidden="true"></i> Récords y Hitos del Personal (Salón de la Fama)
+    </h3>
+    <div id="gridRecordsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+        <!-- Se llena dinámicamente con JS -->
+    </div>
+</div>
+
+    </div>
+</div>
+
+    <!-- VISTA 3: MAPA (SIN DIV ENVOLVENTE INTERNO) -->
+    <div id="vistaModuloMapa" class="vista-modulo">
+        <div style="margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1rem; color: var(--slate-900); font-weight: 700;"><i class="fas fa-map-marked-alt" style="color: var(--primary);" aria-hidden="true"></i> Mapa de Distribución Domiciliaria</h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--slate-600);">Visualización geográfica de los domicilios de los funcionarios registrados</p>
+        </div>
+        <div id="mapaFuncionarios" style="width: 100%; height: 520px; border-radius: 8px; border: 1px solid var(--slate-300); z-index: 1;"></div>
+    </div>
+
+<!-- VISTA 4: MANTENEDOR DE CATÁLOGOS -->
+    <div id="vistaModuloOtros" class="vista-modulo">
+        <div style="margin-bottom: 16px; border-bottom: 2px solid var(--border-light, #e2e8f0); padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main, #0f172a); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-cubes" style="color: var(--primary, #0284c7);" aria-hidden="true"></i> Mantenedor de Cargos y Unidades
+            </h3>
+            <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-muted, #64748b);">Panel para agregar, editar y gestionar los cargos, estamentos, unidades y servicios clínicos del establecimiento.</p>
+        </div>
+
+        <!-- Pestañas internas del mantenedor -->
+        <div class="tabs-container" role="tablist" style="margin-bottom: 16px;">
+            <button type="button" onclick="cambiarSolapaCatalogo('cargos')" id="tabBtnCatCargos" class="tab-btn active">
+                <i class="fas fa-user-tie" aria-hidden="true"></i> Gestión de Cargos
+            </button>
+            <button type="button" onclick="cambiarSolapaCatalogo('unidades')" id="tabBtnCatUnidades" class="tab-btn">
+                <i class="fas fa-hospital-alt" aria-hidden="true"></i> Gestión de Unidades / Servicios
+            </button>
+        </div>
+
+        <!-- CONTENIDO 1: GESTIÓN DE CARGOS -->
+        <div id="tabCatContentCargos" class="tab-catalogos-content active">
+            <div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
+                
+                <!-- Formulario de Cargo (Estilo Tarjeta Elevada) -->
+                <div style="background: var(--card-bg, #ffffff); padding: 18px; border-radius: var(--radius-lg, 12px); border: 1px solid var(--border-color, #cbd5e1); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04)); display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light, #e2e8f0); padding-bottom: 10px;">
+                        <h4 id="tituloFormCargo" style="margin: 0; font-size: 0.9rem; color: var(--text-main, #0f172a); font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-plus-circle" style="color: var(--primary, #0284c7);"></i> Nuevo Cargo
+                        </h4>
+                        <button type="button" onclick="limpiarFormularioCargo()" id="btnNuevoCargo" class="btn btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" title="Limpiar para crear nuevo">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="cargoEditId">
+                    
+                    <div class="form-group">
+                        <label for="catCargoEstamento">Estamento</label>
+                        <input type="text" id="catCargoEstamento" class="auth-input" placeholder="Ej. Médicos, Auxiliares, Administrativos">
+                    </div>
+                    <div class="form-group">
+                        <label for="catCargoMasculino">Nombre Masculino</label>
+                        <input type="text" id="catCargoMasculino" class="auth-input" placeholder="Ej. Médico General">
+                    </div>
+                    <div class="form-group">
+                        <label for="catCargoFemenino">Nombre Femenino</label>
+                        <input type="text" id="catCargoFemenino" class="auth-input" placeholder="Ej. Médica General">
+                    </div>
+
+                    <!-- CHECKBOXES PARA VINCULAR UNIDADES AL CARGO -->
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <i class="fas fa-tasks" style="color: var(--primary, #0284c7);"></i> Unidades Asociadas:
+                        </label>
+                        <div id="containerUnidadesCheckboxes" style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--radius-md, 8px); padding: 8px; background: var(--bg-app, #f8fafc); display: flex; flex-direction: column; gap: 6px;">
+                            <!-- JS puebla dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- BOTONES DE ACCIÓN COMPACTOS Y CLAROS -->
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <button type="button" onclick="guardarCargoDB()" id="btnGuardarCargo" class="btn btn-primary" style="flex: 1; font-size: 0.78rem; padding: 9px 12px;">
+                            <i class="fas fa-save" aria-hidden="true"></i> Guardar
+                        </button>
+                        <button type="button" onclick="limpiarFormularioCargo()" id="btnCancelarCargo" class="btn btn-secondary" style="font-size: 0.78rem; display: none; padding: 9px 12px;">
+                            <i class="fas fa-times" aria-hidden="true"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Cargos Registrados -->
+                <div style="background: var(--card-bg, #ffffff); border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--radius-lg, 12px); overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04));">
+                    <div style="max-height: 520px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                            <thead style="background: var(--bg-app, #f8fafc); position: sticky; top: 0; border-bottom: 2px solid var(--border-color, #cbd5e1); z-index: 2;">
+                                <tr style="color: var(--text-muted, #64748b); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <th style="padding: 10px 14px;">ID</th>
+                                    <th style="padding: 10px 14px;">Estamento</th>
+                                    <th style="padding: 10px 14px;">Cargo Masc / Fem</th>
+                                    <th style="padding: 10px 14px; text-align: center; width: 100px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaCargosBody">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CONTENIDO 2: GESTIÓN DE UNIDADES -->
+        <div id="tabCatContentUnidades" class="tab-catalogos-content">
+            <div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
+                
+                <!-- Formulario Unidad (Estilo Tarjeta Elevada) -->
+                <div style="background: var(--card-bg, #ffffff); padding: 18px; border-radius: var(--radius-lg, 12px); border: 1px solid var(--border-color, #cbd5e1); box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04)); display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light, #e2e8f0); padding-bottom: 10px;">
+                        <h4 id="tituloFormUnidad" style="margin: 0; font-size: 0.9rem; color: var(--text-main, #0f172a); font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-plus-circle" style="color: var(--primary, #0284c7);"></i> Nueva Unidad
+                        </h4>
+                        <button type="button" onclick="limpiarFormularioUnidad()" id="btnNuevaUnidad" class="btn btn-secondary" style="font-size: 0.72rem; padding: 4px 10px;" title="Limpiar para crear nueva">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="unidadEditId">
+                    
+                    <div class="form-group">
+                        <label for="catUnidadNombre">Nombre de la Unidad / Servicio</label>
+                        <input type="text" id="catUnidadNombre" class="auth-input" placeholder="Ej. Urgencia, Pabellón, SOME">
+                    </div>
+                    <div class="form-group">
+                        <label for="catUnidadDepartamento">Departamento al que Pertenece</label>
+                        <select id="catUnidadDepartamento" class="auth-input">
+                            <option value="">Seleccione Departamento...</option>
+                        </select>
+                    </div>
+
+                    <!-- BOTONES DE ACCIÓN COMPACTOS Y CLAROS -->
+                    <div style="display: flex; gap: 8px; margin-top: 4px;">
+                        <button type="button" onclick="guardarUnidadDB()" id="btnGuardarUnidad" class="btn btn-primary" style="flex: 1; font-size: 0.78rem; padding: 9px 12px;">
+                            <i class="fas fa-save" aria-hidden="true"></i> Guardar
+                        </button>
+                        <button type="button" onclick="limpiarFormularioUnidad()" id="btnCancelarUnidad" class="btn btn-secondary" style="font-size: 0.78rem; display: none; padding: 9px 12px;">
+                            <i class="fas fa-times" aria-hidden="true"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla Unidades -->
+                <div style="background: var(--card-bg, #ffffff); border: 1px solid var(--border-color, #cbd5e1); border-radius: var(--radius-lg, 12px); overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.04));">
+                    <div style="max-height: 520px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+                            <thead style="background: var(--bg-app, #f8fafc); position: sticky; top: 0; border-bottom: 2px solid var(--border-color, #cbd5e1); z-index: 2;">
+                                <tr style="color: var(--text-muted, #64748b); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <th style="padding: 10px 14px;">ID</th>
+                                    <th style="padding: 10px 14px;">Unidad / Servicio</th>
+                                    <th style="padding: 10px 14px;">Departamento</th>
+                                    <th style="padding: 10px 14px; text-align: center; width: 100px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUnidadesBody">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+    </main>
+
+    <script src="../js/admin-func.js"></script>
+    <script src="../data/auth.js"></script>
+    <script src="../data/navbar.js"></script>
+    <script src="../data/footer.js"></script>
+</body>
+</html>

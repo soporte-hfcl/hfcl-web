@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio & Música Local | Intranet Hospital de Lanco</title>
+    <!-- Enlace a tu archivo de estilos principal -->
+    <link rel="stylesheet" href="../css/main.css">
+    <!-- FontAwesome para los íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Barra de Navegación Superior -->
+    <header class="web-navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-brand">
+                <img src="../logo.png" alt="Logo" class="nav-logo">
+                <span>Hospital de Lanco • Intranet TIC</span>
+            </a>
+            <div class="nav-meta">
+                <span style="font-size: 0.8rem; color: #cbd5e1;"><i class="fa-solid fa-music"></i> Entorno de Audio Local (Sin Restricciones Minsal)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Layout Principal de 3 Columnas -->
+    <div class="portal-layout-3columns">
+
+        <!-- Columna Izquierda: Menú Lateral -->
+        <aside class="sidebar-panel">
+            <div class="sidebar-section">
+                <h3><i class="fa-solid fa-compass"></i> Navegación</h3>
+                <div class="sidebar-links">
+                    <a href="../index.html" class="sidebar-pill">
+                        <i class="fa-solid fa-house"></i> Portal Principal
+                    </a>
+                    <a href="index.html" class="sidebar-pill highlight-pill">
+                        <i class="fa-solid fa-headphones"></i> Biblioteca Local
+                    </a>
+                </div>
+            </div>
+
+            <div class="sidebar-section" style="margin-top: 20px;">
+                <h3><i class="fa-solid fa-list"></i> Listas y Géneros</h3>
+                <div class="sidebar-links">
+                    <a href="#" class="sidebar-pill"><i class="fa-solid fa-music"></i> Todas las Pistas</a>
+                    <a href="#" class="sidebar-pill"><i class="fa-solid fa-guitar"></i> Pop & Rock Suave</a>
+                    <a href="#" class="sidebar-pill"><i class="fa-solid fa-compact-disc"></i> Instrumental / Relax</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Contenido Central -->
+<!-- Contenido Central -->
+<main class="main-content-area">
+    <section class="hero-section-compact">
+        <h1>Entorno de Audio Local</h1>
+        <p>Reproducción de contenidos multimedia optimizada para la red interna del establecimiento.</p>
+    </section>
+
+    <!-- Listas Populares -->
+    <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+        <h3 style="font-size: 0.95rem; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-folder-open" style="color: var(--accent-color);"></i> Biblioteca de Pistas Locales
+        </h3>
+        <!-- Este contenedor se llenará automáticamente con el JS -->
+        <div class="news-grid-featured"></div>
+    </div>
+</main>
+
+        <!-- Columna Derecha (Panel Auxiliar o Widgets) -->
+        <aside class="right-sidebar-panel">
+            <div class="sidebar-panel">
+                <div class="sidebar-section">
+                    <h3><i class="fa-solid fa-circle-info"></i> Estado del Sistema</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">
+                        Los archivos se escanean de forma local desde el directorio asignado en el servidor del hospital.
+                    </p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- 🌐 FOOTER GLOBAL -->
+    <footer class="web-footer">
+        <div class="footer-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div class="brand-footer" style="display: flex; align-items: center; gap: 15px;">
+                <!-- OJO: Si estás en una subcarpeta, cambia la ruta a "../logo_acreditacion.png" -->
+                <img src="../logo_acreditacion.png" alt="Sello Superintendencia de Salud" class="footer-accred-img">
+                <div>
+                    <h4>Hospital Familiar y Comunitario de Lanco</h4>
+                    <p>Servicio de Salud Los Ríos • Ministerio de Salud</p>
+                    <span class="footer-accred-text"><i class="fas fa-shield-alt"></i> Establecimiento Acreditado en Calidad</span>
+                </div>
+            </div>
+
+            <!-- Redes Oficiales en el Footer -->
+            <div class="footer-social" style="display: flex; gap: 15px; align-items: center;">
+                <span style="font-size: 0.85rem; color: #94a3b8; margin-right: 5px;"><i class="fas fa-globe"></i> Síguenos:</span>
+                <a href="https://www.facebook.com/hfc.lanco" target="_blank" title="Facebook" style="color: #cbd5e1; font-size: 1.1rem; transition: color 0.2s;"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://linkedin.com" target="_blank" title="LinkedIn" style="color: #cbd5e1; font-size: 1.1rem; transition: color 0.2s;"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://whatsapp.com/channel/0029Va6exvMHrDZbkysZms3t" target="_blank" title="WhatsApp" style="color: #cbd5e1; font-size: 1.1rem; transition: color 0.2s;"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://www.instagram.com/hfc.lanco" target="_blank" title="Instagram" style="color: #cbd5e1; font-size: 1.1rem; transition: color 0.2s;"><i class="fab fa-instagram"></i></a>
+            </div>
+
+            <div class="text-right">
+                <p>Sistema autogestionado por <strong>José Paineñanco Durán</strong>, Informático</p>
+                <p class="sub-footer">Unidad TIC • Todos los derechos reservados © 2026</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="reproductor.js"></script>
+
+</body>
+</html>

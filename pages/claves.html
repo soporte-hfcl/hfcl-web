@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Claves y Accesos | HFCL Lanco</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="../logo.png">
+</head>
+<body style="background-color: #f1f5f9; display: flex; flex-direction: column; min-height: 100vh; margin: 0;">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="web-navbar">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-brand">
+                <img src="../logo.png" alt="Logo HFCL Lanco" class="nav-logo" style="width: 34px; height: auto;">
+                <span>Intranet Local</span>
+            </a>
+            <div class="nav-context-menu">
+                <a href="../index.html" class="drop-btn" style="text-decoration: none;"><i class="fas fa-home"></i> Volver al Inicio</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL EN 2 COLUMNAS -->
+    <div style="flex: 1; max-width: 1200px; width: 100%; margin: 30px auto; padding: 0 20px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        
+        <!-- COLUMNA IZQUIERDA: LISTADO DE SISTEMAS Y ENCARGADOS -->
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <h3 style="margin: 0 0 15px 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <i class="fas fa-key" style="color: #0284c7;"></i> Sistemas y Responsables
+            </h3>
+            
+            <div id="listaEncargadosContainer" style="display: flex; flex-direction: column; gap: 10px; max-height: 600px; overflow-y: auto;">
+                <!-- Se llena mediante JavaScript con los datos provistos -->
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: FORMULARIO DE SOLICITUD -->
+        <div style="background: white; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); height: fit-content;">
+            <h3 style="margin: 0 0 15px 0; font-size: 1.1rem; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <i class="fas fa-paper-plane" style="color: #10b981;"></i> Formulario de Solicitud
+            </h3>
+            <form id="formSolicitudClave" onsubmit="enviarSolicitud(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Sistema Solicitado:</label>
+                    <select id="selectSistema" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; background: #f8fafc; outline: none;">
+                        <option value="">-- Seleccione un sistema --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Nombre del Funcionario:</label>
+                    <input type="text" id="solicitanteNombre" required placeholder="Ej. Juan Pérez" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box; outline: none;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Servicio / Unidad:</label>
+                        <input type="text" id="solicitanteServicio" required placeholder="Ej. Urgencia, TIC" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box; outline: none;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Anexo de Contacto:</label>
+                        <input type="text" id="solicitanteAnexo" required placeholder="Ej. 110" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box; outline: none;">
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #334155; display: block; margin-bottom: 4px;">Motivo / Observaciones:</label>
+                    <textarea id="solicitanteMotivo" rows="3" required placeholder="Indique si es reemplazo, nuevo funcionario, etc." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; box-sizing: border-box; outline: none; resize: none;"></textarea>
+                </div>
+                <button type="submit" style="background: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 5px;">
+                    <i class="fas fa-paper-plane"></i> Enviar Solicitud al Encargado
+                </button>
+            </form>
+            <div id="mensajeEstado" style="margin-top: 10px; font-size: 0.85rem; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER GLOBAL -->
+    <footer class="web-footer" style="background-color: #0f172a; color: #94a3b8; padding: 25px 24px; border-top: 1px solid #334155; margin-top: auto;">
+        <div class="footer-container" style="width: 100%; max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div class="brand-footer" style="display: flex; align-items: center; gap: 15px;">
+                <img src="../logo_acreditacion.png" alt="Sello Calidad" style="max-height: 50px;">
+                <div>
+                    <h4 style="color: white; margin: 0; font-size: 0.95rem;">Hospital Familiar y Comunitario de Lanco</h4>
+                    <p style="margin: 0; font-size: 0.8rem;">Servicio de Salud Los Ríos • Ministerio de Salud</p>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <p style="margin: 0; font-size: 0.85rem;">Sistema autogestionado por <strong>José Paineñanco Durán</strong>, Informático</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

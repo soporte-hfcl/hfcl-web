@@ -1,0 +1,125 @@
+/* ==========================================================================
+   MODAL ULTRA-MODERN - PATENTES HFCL (Estilos Específicos)
+   ========================================================================== */
+
+/* Sobrescritura específica o adaptación del Modal de Patentes */
+.modal-overlay {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.modal-overlay:not(.hidden) {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    max-width: 460px;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay:not(.hidden) .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 3px solid var(--success, #10b981);
+}
+
+.modal-header h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.close-modal-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: var(--text-muted, #94a3b8);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base, 0.2s ease);
+}
+
+.close-modal-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-secondary, #475569);
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+}
+
+.full-width-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg-app, #f8fafc);
+    border: 1.5px solid var(--border-light, #e2e8f0);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--text-main, #0f172a);
+    outline: none;
+    box-sizing: border-box;
+    transition: all var(--transition-base, 0.2s ease);
+}
+
+.full-width-input:hover {
+    border-color: var(--border, #cbd5e1);
+}
+
+.full-width-input:focus {
+    background: var(--surface, #ffffff);
+    border-color: var(--success, #10b981);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light, #e2e8f0);
+}
+
+.btn-secondary {
+    background: var(--bg-app, #f8fafc);
+    color: var(--text-muted, #64748b);
+    border: 1.5px solid var(--border-light, #e2e8f0);
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base, 0.2s ease);
+}
+
+.btn-secondary:hover {
+    background: var(--border-light, #e2e8f0);
+    color: var(--text-main, #334155);
+}

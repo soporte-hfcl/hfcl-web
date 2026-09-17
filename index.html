@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Institucional | HFCL</title>
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Favicon con el logo del hospital -->
+    <link rel="icon" type="image/png" href="assets/img/logo_hfcl.png">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="splash-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.8s ease; opacity: 1;">
+    <video id="intro-video" autoplay muted playsinline style="max-width: 100%; max-height: 100%;">
+        <source src="assets/video/animacion.mp4" type="video/mp4">
+        Tu navegador no soporta video.
+    </video>
+</div>
+<script>
+    const splash = document.getElementById('splash-screen');
+    const video = document.getElementById('intro-video');
+    function ocultarSplash() {
+        splash.style.opacity = '0';
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 800);
+    }
+    video.onended = ocultarSplash;
+    setTimeout(ocultarSplash, 4000);
+</script>
+
+<div id="pagePreloader" class="preloader-overlay">
+    <div class="preloader-content">
+        <img src="assets/img/logo_hfcl.png" alt="Logo HFCL Lanco" class="preloader-logo">
+    </div>
+</div>
+
+<!-- Contenedor automático del Navbar -->
+<div id="app-navbar"></div>
+
+<!-- Layout Principal de 3 Columnas -->
+<div class="portal-layout-3columns">
+    
+    <!-- BARRA LATERAL IZQUIERDA -->
+    <aside class="sidebar-panel">
+        <div class="sidebar-section">
+            <h3><i class="fas fa-calendar-alt"></i> Módulo Operativo</h3>
+            <div class="sidebar-links">
+                <a href="pages/directorio.html" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-address-book"></i> Agenda Telefónica</a>
+                <a href="pages/turnos.html" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-calendar-check"></i> Turnos</a>
+                <a href="pages/reservas.html" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-door-open"></i> Reserva de Espacios</a>
+                <a href="javascript:void(0);" onclick="alert('Módulo de Cursos y Capacitaciones próximamente');" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-graduation-cap"></i> Cursos y Capacitaciones</a>
+                <a href="pages/patentes.html" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-car"></i> Patentes de Vehículos</a>
+                <a href="pages/plano.html" class="sidebar-pill highlight-pill">
+                    <i class="fas fa-map-marked-alt"></i> Mapa de Servicios</a>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3><i class="fas fa-hospital"></i> Enlaces HFCL</h3>
+            <div class="sidebar-links">
+                <a href="http://10.66.50.163:8445" target="_blank" class="sidebar-pill"><i class="fas fa-flask"></i> Laboratorio</a>
+                <a href="http://10.8.103.9/autoconsulta" target="_blank" class="sidebar-pill"><i class="fas fa-user-check"></i> Autoconsulta</a>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <h3><i class="fas fa-network-wired"></i> Enlaces SSLR</h3>
+            <div class="sidebar-links">
+                <a href="http://www.hbvaldivia.cl/portal" target="_blank" class="sidebar-pill"><i class="fas fa-hospital-alt"></i> HB Valdivia</a>
+                <a href="http://www.sslosrios.redsalud.gob.cl" target="_blank" class="sidebar-pill"><i class="fas fa-globe-americas"></i> SSLR</a>
+                <a href="http://www.hbvaldivia.cl/core" target="_blank" class="sidebar-pill"><i class="fas fa-server"></i> CORE</a>
+                <a href="http://www.rasvaldivia.cl" target="_blank" class="sidebar-pill"><i class="fas fa-project-diagram"></i> RAS</a>
+                <a href="http://10.6.67.24:8080/tao" target="_blank" class="sidebar-pill"><i class="fas fa-desktop"></i> TAONET</a>
+            </div>
+        </div>
+
+        <div class="sidebar-section contingencia-section">
+            <h3><i class="fas fa-shield-alt"></i> Enlaces de Contingencia</h3>
+            <div class="sidebar-links">
+                <a href="javascript:void(0);" target="_blank" class="sidebar-pill"><i class="fas fa-network-wired doc-color"></i> RAS</a>
+                <a href="javascript:void(0);" target="_blank" class="sidebar-pill"><i class="fas fa-server doc-color"></i> CORE</a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO CENTRAL -->
+    <main class="main-content-area">
+        <section class="hero-section-compact" style="display: flex; flex-direction: row; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 20px;">
+            <div style="flex: 1; min-width: 0;">
+                <h1 style="margin: 0; font-size: 1.5rem;">Noticias y Participación Ciudadana</h1>
+                <p style="margin: 4px 0 0 0;">Actividades, charlas y operativos recientes con la comunidad local.</p>
+            </div>
+            
+            <div id="widgetRedContainer" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: white; backdrop-filter: blur(4px);">
+                <i id="redIcono" class="fas fa-server" style="font-size: 1.6rem; color: #4ade80;"></i>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.9rem; font-weight: 700;">Red MINSAL</span>
+                    </div>
+                    <span id="redEstadoTexto" style="font-size: 0.68rem; color: #4ade80; font-weight: 600;">
+                        <span style="display:inline-block; width:6px; height:6px; background:#4ade80; border-radius:50%; margin-right:4px;"></span> Verificando enlace...
+                    </span>
+                </div>
+            </div>
+                             
+            <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); padding: 8px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; color: white; backdrop-filter: blur(4px); flex-shrink: 0;">
+                <i id="climaIcono" class="fas fa-spinner fa-spin" style="font-size: 1.6rem; color: #38bdf8;"></i>
+                <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="climaTemp" style="font-size: 1.1rem; font-weight: 700;">-- °C</span>
+                        <span id="climaEstado" style="font-size: 0.75rem; color: #cbd5e1;">Lanco • Cargando...</span>
+                    </div>
+                    <span id="climaMaxMin" style="font-size: 0.68rem; color: #94a3b8;">Actualizando datos...</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <div class="news-grid-featured" id="newsGridContainer"></div>
+        </section>
+    </main>
+
+    <!-- BARRA LATERAL DERECHA -->
+    <aside class="right-sidebar-panel">
+        <div class="sidebar-section" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-top: 20px;">
+            <h3 style="font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                <i class="fas fa-star" style="color: #f59e0b;"></i> Cumpleaños y Trayectoria
+            </h3>
+                             
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; border-left: 4px solid #f59e0b;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <i class="fas fa-birthday-cake" style="font-size: 1.2rem; color: #d97706;"></i>
+                        <h4 style="margin: 0; font-size: 0.9rem; color: #92400e;">Cumpleaños Destacados</h4>
+                    </div>
+                    <p id="cumpleResumenTexto" style="margin: 0; font-size: 0.8rem; color: #78350f; line-height: 1.4;">
+                        Cargando cumpleañeros...
+                    </p>
+                    <button onclick="openCumpleModal()" style="margin-top: 8px; background: #f59e0b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+                    Ver Cumpleaños del Mes</button>
+                </div>
+
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; border-left: 4px solid #f59e0b;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-award" style="font-size: 1.2rem; color: #d97706;"></i>
+                            <h4 style="margin: 0; font-size: 0.9rem; color: #92400e;">Años de Servicio</h4>
+                        </div>
+                    </div>
+                    <div id="sidebarAniversariosTop" style="display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: #78350f;"></div>
+                    <button onclick="abrirModalAniversarios()" style="margin-top: 8px; background: #f59e0b; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; cursor: pointer;">
+                        Ver Todos</button>
+                </div>
+
+                <div class="sidebar-section efemerides-sidebar">
+                    <h3><i class="fas fa-calendar-alt" style="color: #ef4444;"></i> Próximas Efemérides de Salud</h3>
+                    <div id="efemeridesContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+</div>
+
+<!-- MODAL DE LOGIN -->
+<div id="accesoFuncionarioModal" class="modal-overlay hidden">
+    <div class="modal-content modal-card-auth" style="background: #ffffff; width: 100%; max-width: 400px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); overflow: hidden; display: flex; flex-direction: column;">
+        <div class="modal-auth-header" style="padding: 16px 20px; background: #0f172a; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.1rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-lock"></i> Autenticación de Funcionario
+            </h3>
+            <button class="close-btn" onclick="closeAccesoFuncionarioModal()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #94a3b8;">&times;</button>
+        </div>
+        <div class="modal-auth-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+            <p class="modal-subtitle" style="font-size: 0.78rem; color: #64748b; margin: 0;">
+                Ingrese sus credenciales institucionales del portal.
+            </p>
+            <form id="formAccesoFuncionario" onsubmit="handleAccesoFuncionario(event)">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;">
+                    <label for="usuarioFuncionario" style="font-size: 0.75rem; font-weight: 600; color: #0f172a;">Usuario o RUN:</label>
+                    <input type="text" id="usuarioFuncionario" class="auth-input" placeholder="Ej. usuario.institucional" required style="padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; width: 100%;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px;">
+                    <label for="claveFuncionario" style="font-size: 0.75rem; font-weight: 600; color: #0f172a;">Contraseña:</label>
+                    <input type="password" id="claveFuncionario" class="auth-input" placeholder="••••••••" required style="padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem; outline: none; width: 100%;">
+                </div>
+                <div id="errorAccesoFuncionario" class="auth-error hidden" style="font-size: 0.75rem; color: #ef4444; font-weight: 600; margin-bottom: 8px;">
+                    Credenciales inválidas. Intente nuevamente.
+                </div>
+                <button type="submit" class="auth-submit-btn" style="background: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; width: 100%;">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- CUMPLEAÑOS Y ANIVERSARIOS SIDEBAR MODALS -->
+<div id="cumpleModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 600px; width: 95%;">
+        <div class="modal-header">
+            <h2><i class="fas fa-birthday-cake" style="color: #f59e0b;"></i> Cumpleaños del Mes • Hospital Lanco</h2>
+            <button class="close-modal-btn" onclick="closeCumpleModal()">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 20px;">
+            <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 20px; text-align: center;">
+                El equipo de la Unidad TIC y el hospital saluda afectuosamente a nuestros compañeros en su día. ¡Feliz cumpleaños!
+            </p>
+            <div id="cumpleModalListaContainer"></div>
+        </div>
+    </div>
+</div>
+
+<div id="aniversariosModal" class="modal-overlay hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: var(--surface); width: 90%; max-width: 600px; border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-lg);">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);">Trayectoria e Hitos Institucionales</h3>
+                <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Funcionarios que cumplen años de servicio este mes</p>
+            </div>
+            <button onclick="cerrarModalAniversarios()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 12px;">
+                <select id="mesAniversarioSelect" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-app); font-size: 0.85rem;"></select>
+            </div>
+            <div id="listaAniversariosModal" style="max-height: 400px; overflow-y: auto; padding-right: 4px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Botón flotante de información -->
+<a href="javascript:void(0);" onclick="abrirAviso()" title="Acerca de esta página" class="btn-flotante-info">i</a>
+
+<div id="modalAvisos" class="modal-aviso-overlay" style="display: none;">
+    <div class="modal-aviso-contenido" style="max-width: 680px; width: 95%; border-left: 5px solid #0284c7; padding: 0; overflow: hidden;">
+        <div class="modal-header" style="background: #0f172a; color: white; padding: 15px 24px;">
+            <h2 style="margin: 0; font-size: 1.25rem;"><i class="fas fa-info-circle" style="color: #38bdf8;"></i> Aviso Importante • Intranet en Desarrollo</h2>
+        </div>
+        <div class="modal-body" style="padding: 24px; background: #f8fafc; font-size: 0.92rem; line-height: 1.5; color: #334155; display: flex; flex-direction: column; gap: 12px;">
+            <p style="margin: 0;">Estimados funcionarios y funcionarias:</p>
+            <p style="margin: 0;">Les doy la bienvenida a esta plataforma, una iniciativa personal y autogestionada, desarrollada de manera independiente con el propósito de reunir y centralizar, en un solo lugar, información y recursos de uso frecuente.</p>
+            <p style="margin: 0;">El objetivo principal es facilitar el acceso a sistemas, anexos telefónicos, formularios, turnos y otros recursos de utilidad, buscando optimizar el trabajo diario y disponer de la información necesaria a solo un clic.</p>
+                             
+            <div style="background: #e0f2fe; padding: 12px 15px; border-radius: 6px; border: 1px solid #bae6fd; color: #0369a1;">
+                <strong>📌 Estado actual:</strong><br>
+                Actualmente, la plataforma se encuentra en desarrollo y en constante actualización. Algunos módulos pueden estar en fase de pruebas, presentar información incompleta o no encontrarse temporalmente disponibles.<br>
+                Es posible que durante este proceso encuentren pequeños errores o inconsistencias, ya que se está trabajando con información acotada mientras se recopila, revisa y consolida el contenido definitivo.
+            </div>
+            <p style="margin: 0;">Agradezco su comprensión y paciencia durante esta etapa. Espero que esta herramienta pueda ser de utilidad y contribuir a facilitar las labores cotidianas de todos y todas.</p>
+            <div style="border-top: 1px solid #cbd5e1; padding-top: 10px; margin-top: 5px; font-size: 0.85rem; color: #475569;">
+                <strong>Desarrollado y administrado por:</strong><br>
+                <span style="color: #0f172a; font-weight: 700; font-size: 0.9rem;">José Paineñanco Durán</span><br>
+                <em style="color: #64748b;">Proyecto personal y autogestionado. Esta iniciativa no ha sido solicitada ni mandatada por jefaturas o por la Dirección.</em>
+            </div>
+                             
+            <div style="text-align: right; margin-top: 10px;">
+                <button onclick="cerrarAviso()" style="background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.9rem;">
+                    <i class="fas fa-check"></i> Entendido, cerrar aviso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function abrirAviso() {
+        const modal = document.getElementById('modalAvisos');
+        if (modal) modal.style.display = 'flex';
+    }
+    function cerrarAviso() {
+        const modal = document.getElementById('modalAvisos');
+        if (modal) modal.style.display = 'none';
+    }
+</script>
+
+<!-- Scripts esenciales -->
+<script src="js/main.js"></script>
+<script src="js/cumpleanos.js"></script>
+<script src="js/efemerides.js"></script>
+<script src="data/auth.js"></script>
+<script src="js/noticias.js"></script>
+<script src="data/navbar.js"></script>
+<script src="data/footer.js"></script>
+</body>
+</html>
