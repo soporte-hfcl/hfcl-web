@@ -16,8 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
         const respuestaCloud = await cargarDatosCloud('equipos', 'hfc_lan_master_cache');
         if (respuestaCloud) {
-            // Asignación limpia y separada según la estructura real que devuelve tu backend
-            listaNodosRed = Array.isArray(respuestaCloud.equipos) ? respuestaCloud.equipos : [];
+            listaNodosRed = Array.isArray(respuestaCloud.equipos) ? respuestaCloud.equipos : (Array.isArray(respuestaCloud) ? respuestaCloud : []);
             listaInfraestructuraRed = Array.isArray(respuestaCloud.red) ? respuestaCloud.red : [];
             
             if (respuestaCloud.info) {
@@ -27,11 +26,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
         console.error("Error al conectar con la nube:", err);
         listaNodosRed = [];
-    }
+    } finally {
 
-    poblarSelectoresDesdeBD();
-    renderizarResultadosRed(listaNodosRed);
-    renderizarVistaRacks(listaNodosRed);
+        poblarSelectoresDesdeBD();
+        renderizarResultadosRed(listaNodosRed);
+        renderizarVistaRacks(listaNodosRed);
+
+        const kpiTotal = document.getElementById('kpi-total-equipos');
+        if (kpiTotal) kpiTotal.textContent = listaNodosRed.length;
+
+        ocultarPantallaCarga();
+    }
 
     const searchInput = document.getElementById('globalSearch');
     if (searchInput) {
@@ -56,9 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     poblarPuertosSelect();
 });
 
-/**
- * Llena los selectores leyendo exclusivamente de las columnas de 'info' y 'red'
- */
 function poblarSelectoresDesdeBD() {
     const selectRack = document.getElementById('formRack');
     const selectPatchPanel = document.getElementById('selectPatchPanel');
@@ -84,7 +86,6 @@ function poblarSelectoresDesdeBD() {
     const soSet = new Set();
     const officeSet = new Set();
 
-    // 1. Lectura estricta de la hoja 'info'
     if (listaInfoMaestra && typeof listaInfoMaestra === 'object') {
         for (const colKey in listaInfoMaestra) {
             if (Array.isArray(listaInfoMaestra[colKey])) {
@@ -106,12 +107,9 @@ function poblarSelectoresDesdeBD() {
         }
     }
 
-// 2. Lectura robusta de la hoja 'red' para Racks y Patch Panels / Puntos reales
     if (Array.isArray(listaInfraestructuraRed)) {
         listaInfraestructuraRed.forEach(item => {
-            // Buscamos cualquier variante posible del nombre de la columna del Rack
             const rackId = item.id_racks || item.rack || item.Rack || item.id_racksid;
-            // Buscamos cualquier variante posible del nombre de la columna del Patch Panel
             const patchPanel = item.patch_panel || item.roseta || item.punto || item.Roseta;
             
             if (rackId) racksSet.add(rackId.toString().trim());
@@ -119,7 +117,6 @@ function poblarSelectoresDesdeBD() {
         });
     }
 
-    // Si por alguna razón la hoja red viene vacía, forzamos los 6 racks oficiales del hospital
     if (racksSet.size === 0) {
         ["P1A", "P1B", "P1C", "P2A", "P2B", "P2C"].forEach(r => racksSet.add(r));
     }
@@ -149,12 +146,6 @@ function poblarSelectoresDesdeBD() {
     rellenarSelect(selectOffice, officeSet, "Seleccione Office...");
 }
 
-/**
- * Filtra los switches según el rack seleccionado
- */
-/**
- * Filtra los switches según el rack seleccionado de forma robusta
- */
 function filtrarSwitchesPorRack(rackSeleccionadoForzado = null) {
     const selectRack = document.getElementById('formRack');
     const selectSwitch = document.getElementById('formSwitch');
@@ -167,7 +158,6 @@ function filtrarSwitchesPorRack(rackSeleccionadoForzado = null) {
 
     if (Array.isArray(listaInfraestructuraRed)) {
         listaInfraestructuraRed.forEach(item => {
-            // Mapeo unificado con las propiedades reales del backend (id_racks e id_sw)
             const r = item.id_racks || item.rack || item.id_racksid;
             const sw = item.id_sw || item.swnombre || item.switch;
             
@@ -177,7 +167,6 @@ function filtrarSwitchesPorRack(rackSeleccionadoForzado = null) {
         });
     }
 
-    // Fallback institucional si la hoja red no tiene filas para este rack específico
     if (switchesDelRack.size === 0 && rackActual) {
         switchesDelRack.add(`SW-${rackActual}-Principal`);
         switchesDelRack.add(`SW-${rackActual}-Secundario`);
@@ -215,67 +204,91 @@ function toggleCamposDinamicos() {
 }
 
 function renderizarResultadosRed(datos) {
-    const contenedor = document.getElementById('searchResults');
+    const contenedor = document.getElementById('resultadosRedContainer');
     if (!contenedor) return;
-    contenedor.innerHTML = '';
 
     if (!Array.isArray(datos) || datos.length === 0) {
         contenedor.innerHTML = `
-            <div class="text-center py-10 text-slate-400 text-xs bg-slate-900/40 border border-slate-800/60 rounded-2xl p-4">
-                <i class="fas fa-exclamation-triangle text-amber-400 text-lg mb-2"></i>
-                <p class="font-semibold text-slate-300">No se encontraron dispositivos registrados.</p>
+            <div class="text-center py-12 bg-slate-900/50 rounded-2xl border border-slate-800/80 space-y-2">
+                <i class="fas fa-network-wired text-slate-600 text-2xl"></i>
+                <p class="text-xs text-slate-400">No se encontraron dispositivos registrados.</p>
             </div>
         `;
         return;
     }
 
+    let html = '';
     datos.forEach(nodo => {
-        const hostname = nodo.hostname || nodo.Hostname || nodo.nombre || 'SIN-NOMBRE';
-        const ip = nodo.ip || nodo.IP || 'S/IP';
-        const mac = nodo.mac || nodo.MAC || 'S/MAC';
-        const puerto = nodo.puerto || nodo.Puerto || 'P00';
-        const tipo = nodo.tipo || nodo.Tipo || 'Dispositivo';
-        const patchPanel = nodo.patch_panel || nodo.roseta || nodo.Roseta || 'D00';
-        const estado = nodo.estado || nodo.Estado || 'Online';
+        // Normalizamos el objeto para asegurar lectura limpia
+        const item = {
+            hostname: nodo.hostname || nodo.Hostname || nodo.nombre || 'SIN-NOMBRE',
+            ip: nodo.ip || nodo.IP || 'S/IP',
+            mac: nodo.mac || nodo.MAC || 'S/MAC',
+            tipo: nodo.tipo || nodo.Tipo || 'PC / Notebook',
+            marca: nodo.marca || nodo.Marca || '',
+            rack: nodo.rack || nodo.Rack || 'P1A',
+            sw: nodo.sw || nodo.switch || '',
+            puerto: nodo.puerto || '',
+            observaciones: nodo.observaciones || ''
+        };
+
+        // 2. Iconografía dinámica según el tipo de hardware
+        let iconoHtml = '<i class="fas fa-desktop text-blue-400"></i>';
+        let bordeColor = 'border-l-blue-500'; // Estilo SysAdmin por defecto (Estaciones de trabajo)
         
-        const card = document.createElement('div');
-        card.className = "search-card bg-slate-900/90 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-xl";
+        const tipoLower = item.tipo.toLowerCase();
+        if (tipoLower.includes('impresora') || tipoLower.includes('printer')) {
+            iconoHtml = '<i class="fas fa-print text-amber-400"></i>';
+            bordeColor = 'border-l-amber-500';
+        } else if (tipoLower.includes('switch') || tipoLower.includes('router') || tipoLower.includes('ap') || tipoLower.includes('red')) {
+            iconoHtml = '<i class="fas fa-network-wired text-emerald-400"></i>';
+            bordeColor = 'border-l-emerald-500';
+        } else if (tipoLower.includes('servidor') || tipoLower.includes('server')) {
+            iconoHtml = '<i class="fas fa-server text-purple-400"></i>';
+            bordeColor = 'border-l-purple-500';
+        } else if (tipoLower.includes('notebook') || tipoLower.includes('laptop')) {
+            iconoHtml = '<i class="fas fa-laptop text-sky-400"></i>';
+            bordeColor = 'border-l-sky-500';
+        }
 
-        card.innerHTML = `
-            <div class="flex justify-between items-start border-b border-slate-800 pb-2">
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-[10px] bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded font-mono font-semibold">${tipo}</span>
-                        <span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-medium">Hospital</span>
+        html += `
+            <div class="bg-slate-900/90 border border-slate-800 border-l-4 ${bordeColor} p-3.5 rounded-xl shadow-lg space-y-2.5 transition hover:border-slate-700">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center border border-slate-800">
+                            ${iconoHtml}
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-100 tracking-wide">${item.hostname}</h3>
+                            <span class="text-[10px] text-blue-400 font-mono font-semibold">${item.ip}</span>
+                        </div>
                     </div>
-                    <h3 class="text-sm font-bold text-slate-100 mt-1">${hostname}</h3>
+                    <span class="text-[10px] bg-slate-950 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-800">${item.tipo}</span>
                 </div>
-                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-md font-medium">${estado}</span>
-            </div>
 
-            <div class="grid grid-cols-2 gap-2 text-xs font-mono text-slate-300 bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/60">
-                <div>IP: <span class="text-blue-400">${ip}</span></div>
-                <div>Patch Panel: ${patchPanel}</div>
-                <div class="col-span-2">MAC: ${mac}</div>
-            </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono">
+                    <div>Rack: <span class="text-slate-300 font-bold">${item.rack}</span></div>
+                    <div>Puerto: <span class="text-slate-300 font-bold">${item.puerto || 'S/P'}</span></div>
+                    <div class="col-span-2 text-[10px] text-slate-400 truncate">Switch: <span class="text-slate-300">${item.sw || 'No asignado'}</span></div>
+                </div>
 
-            <div class="pt-2 border-t border-slate-800/80 flex justify-end">
-                <button type="button" onclick="cargarParaEditar('${hostname}', '${ip}', '${mac}', '${puerto}', '${patchPanel}', '${tipo}', '${nodo.marca || ''}', '${nodo.cpu || ''}', '${nodo.ram || ''}', '${nodo.almacenamiento || ''}', '${nodo.so || ''}', '${nodo.office || ''}', '${nodo.rack || ''}', '${nodo.switch || ''}')" class="bg-slate-800 hover:bg-slate-700 text-blue-400 text-xs font-medium px-3 py-2 rounded-xl border border-slate-700 transition flex items-center space-x-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <span>Modificar / Mover Puerto</span>
-                </button>
+                <div class="flex justify-end space-x-2 pt-1">
+                    <button type="button" onclick='verDetallesObjeto(${JSON.stringify(nodo).replace(/'/g, "&#39;")})' class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                        <i class="fas fa-eye text-blue-400"></i>
+                        <span>Ver Detalles</span>
+                    </button>
+                    <button type="button" onclick='cargarParaEditarObjeto(${JSON.stringify(nodo).replace(/'/g, "&#39;")})' class="bg-slate-800 hover:bg-slate-700 text-blue-400 text-[11px] font-medium px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center space-x-1.5">
+                        <i class="fas fa-edit"></i>
+                        <span>Editar</span>
+                    </button>
+                </div>
             </div>
         `;
-        contenedor.appendChild(card);
     });
+
+    contenedor.innerHTML = html;
 }
 
-/**
- * Renderiza la Vista de Racks agrupando y ordenando estrictamente por pisos y gabinetes oficiales
- */
-/**
- * Renderiza la Vista de Racks ordenada por pisos con tarjetas colapsables (acordeones)
- */
 function renderizarVistaRacks(datos) {
     const contenedorRacks = document.getElementById('view-racks');
     if (!contenedorRacks) return;
@@ -288,6 +301,7 @@ function renderizarVistaRacks(datos) {
     const racksAgrupados = {};
     if (Array.isArray(datos)) {
         datos.forEach(nodo => {
+            // Normalizamos la lectura del rack para agruparlos bien
             const rackKey = (nodo.rack || nodo.Rack || nodo.ubicacion || 'P1A').toString().trim().toUpperCase();
             if (!racksAgrupados[rackKey]) racksAgrupados[rackKey] = [];
             racksAgrupados[rackKey].push(nodo);
@@ -313,6 +327,19 @@ function renderizarVistaRacks(datos) {
 
         nivel.racks.forEach(nombreRack => {
             const elementos = racksAgrupados[nombreRack] || [];
+            const totalPuertosEstimados = 24; // Capacidad estándar por switch principal
+            const ocupacionPorcentaje = Math.min(Math.round((elementos.length / totalPuertosEstimados) * 100), 100);
+
+            // Definir color de la barra según la saturación
+            let colorBarra = "bg-emerald-500";
+            let colorBadge = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+            if (ocupacionPorcentaje > 75) {
+                colorBarra = "bg-red-500";
+                colorBadge = "text-red-400 bg-red-500/10 border-red-500/20";
+            } else if (ocupacionPorcentaje > 40) {
+                colorBarra = "bg-amber-500";
+                colorBadge = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+            }
             
             let htmlElementos = '';
             if (elementos.length > 0) {
@@ -342,17 +369,23 @@ function renderizarVistaRacks(datos) {
                 `;
             }
 
-            // Cada rack es un elemento <details> nativo que actúa como acordeón limpio
+            // Renderizado del Rack con la nueva barra de ocupación integrada
             htmlRacksGlobal += `
                 <details class="group bg-slate-900/60 border border-slate-800 rounded-2xl shadow-lg overflow-hidden transition">
-                    <summary class="flex justify-between items-center p-3.5 cursor-pointer select-none hover:bg-slate-800/40">
-                        <div class="flex items-center space-x-2.5">
-                            <div class="w-2 h-2 rounded-full bg-blue-400 group-open:bg-emerald-400 transition"></div>
-                            <h4 class="text-xs font-bold text-slate-200 tracking-wide">Rack ${nombreRack}</h4>
+                    <summary class="flex flex-col p-3.5 cursor-pointer select-none hover:bg-slate-800/40 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-2 h-2 rounded-full bg-blue-400 group-open:bg-emerald-400 transition"></div>
+                                <h4 class="text-xs font-bold text-slate-200 tracking-wide">Rack ${nombreRack}</h4>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] px-2 py-0.5 rounded font-semibold border ${colorBadge}">${elementos.length} equipos (${ocupacionPorcentaje}%)</span>
+                                <i class="fas fa-chevron-down text-[10px] text-slate-400 group-open:rotate-180 transition-transform"></i>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-semibold border border-blue-500/20">${elementos.length} equipos</span>
-                            <i class="fas fa-chevron-down text-[10px] text-slate-400 group-open:rotate-180 transition-transform"></i>
+                        <!-- Barra de Ocupación Visual -->
+                        <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800/80">
+                            <div class="${colorBarra} h-full rounded-full transition-all duration-500" style="width: ${ocupacionPorcentaje}%"></div>
                         </div>
                     </summary>
                     <div class="p-3.5 pt-0 space-y-2 border-t border-slate-800/60 bg-slate-950/30">
@@ -374,7 +407,7 @@ function switchView(viewName, btnElement) {
     const targetView = document.getElementById('view-' + viewName);
     if (targetView) targetView.classList.remove('hidden');
 
-    const titles = { consultar: 'Módulo de Consulta', registrar: 'Gestión de Activos / Edición', racks: 'Estado de Racks' };
+    const titles = { dashboard: 'Panel de Control', consultar: 'Módulo de Consulta', registrar: 'Gestión de Activos / Edición', racks: 'Estado de Racks' };
     const subtitleEl = document.getElementById('header-subtitle');
     if (subtitleEl) subtitleEl.innerText = titles[viewName];
 
@@ -399,42 +432,98 @@ function poblarPuertosSelect(puertoActualForzado = null) {
     if (puertoActualForzado) selectP.value = puertoActualForzado;
 }
 
-function cargarParaEditar(hostname, ip, mac, puerto, patchPanel, tipo, marca, cpu, ram, almacenamiento, so, office, rack, switchVal) {
-    document.getElementById('inputHostname').value = hostname;
-    document.getElementById('inputIp').value = ip;
-    document.getElementById('inputMac').value = mac;
-    document.getElementById('selectPatchPanel').value = patchPanel || '';
-    document.getElementById('selectTipo').value = tipo || '';
-    document.getElementById('selectMarca').value = marca || '';
+function cargarParaEditarObjeto(nodo) {
+    if (!nodo) return;
+
+    console.log("DATOS RECIBIDOS DEL NODO:", nodo);
+
+    // Traductor y normalizador inteligente para corregir el desfase de la BD
+    let item = {
+        hostname: nodo.hostname || nodo.Hostname || nodo.nombre || '',
+        ip: nodo.ip || nodo.IP || '',
+        mac: nodo.mac || nodo.MAC || '',
+        tipo: nodo.tipo || nodo.Tipo || '',
+        marca: nodo.marca || nodo.Marca || '',
+        
+        // Corregimos los campos que venían intercambiados en la nube:
+        rack: nodo.puerto && nodo.puerto.startsWith('P1') || nodo.puerto && nodo.puerto.startsWith('P2') ? nodo.puerto : (nodo.rack || 'P1A'),
+        sw: nodo.cpu && nodo.cpu.includes('SW-') ? nodo.cpu : (nodo.sw || nodo.switch || ''),
+        puerto: nodo.ram && nodo.ram.startsWith('P') ? nodo.ram : (nodo.puerto || ''),
+        patch_panel: nodo.patch_panel || nodo.roseta || '',
+        
+        cpu: nodo.so && nodo.so.includes('Intel') || nodo.so && nodo.so.includes('AMD') ? nodo.so : (nodo.cpu || ''),
+        ram: nodo.office && nodo.office.includes('GB') ? nodo.office : (nodo.ram || ''),
+        almacenamiento: nodo.observaciones && (nodo.observaciones.includes('NVMe') || nodo.observaciones.includes('SSD') || nodo.observaciones.includes('TB')) ? nodo.observaciones : (nodo.almacenamiento || ''),
+        
+        so: nodo.almacenamiento && nodo.almacenamiento.includes('Mint') || nodo.almacenamiento && nodo.almacenamiento.includes('Windows') ? nodo.almacenamiento : (nodo.so || ''),
+        office: nodo.modelo || nodo.office || '',
+        observaciones: nodo.observaciones && !nodo.observaciones.includes('NVMe') ? nodo.observaciones : ''
+    };
+
+    console.log("ITEM NORMALIZADO Y CORREGIDO:", item);
+
+    document.getElementById('inputHostname').value = item.hostname;
+    document.getElementById('inputIp').value = item.ip;
+    document.getElementById('inputMac').value = item.mac;
+    document.getElementById('inputObservaciones').value = item.observaciones;
     
-    document.getElementById('formRack').value = rack || 'P1A';
-    filtrarSwitchesPorRack(rack || 'P1A');
-    document.getElementById('formSwitch').value = switchVal || '';
+    // 1. Asignar Rack y filtrar switches correspondientes
+    const rackVal = (item.rack || 'P1A').toString().trim();
+    const selectRackEl = document.getElementById('formRack');
+    if (selectRackEl) {
+        selectRackEl.value = rackVal;
+        filtrarSwitchesPorRack(rackVal);
+    }
+    
+    // 2. Asignar Switch y demás campos con retardo para asegurar renderizado del DOM
+    setTimeout(() => {
+        const selectSwitchEl = document.getElementById('formSwitch');
+        if (selectSwitchEl) {
+            selectSwitchEl.value = item.sw || '';
+        }
+    }, 120);
+    
+    document.getElementById('selectPatchPanel').value = item.patch_panel;
+    document.getElementById('selectTipo').value = item.tipo;
+    document.getElementById('selectMarca').value = item.marca;
 
     toggleCamposDinamicos();
 
-    if (cpu) document.getElementById('selectCpu').value = cpu;
-    if (ram) document.getElementById('selectRam').value = ram;
-    if (almacenamiento) document.getElementById('selectCapAlm').value = almacenamiento;
-    if (so) document.getElementById('selectSo').value = so;
-    if (office) document.getElementById('selectOffice').value = office;
+    function seleccionarOInyectar(elementId, valorBuscado) {
+        const el = document.getElementById(elementId);
+        if (!el || !valorBuscado) return;
+        
+        let encontrada = false;
+        const valStr = String(valorBuscado).trim().toLowerCase();
+        for (let i = 0; i < el.options.length; i++) {
+            if (el.options[i].value.trim().toLowerCase() === valStr) {
+                el.value = el.options[i].value;
+                encontrada = true;
+                break;
+            }
+        }
+        if (!encontrada) {
+            const opt = document.createElement('option');
+            opt.value = valorBuscado;
+            opt.textContent = valorBuscado;
+            el.appendChild(opt);
+            el.value = valorBuscado;
+        }
+    }
 
-    puertoEnEdicionActual = puerto;
-    poblarPuertosSelect(puerto);
+    seleccionarOInyectar('selectCpu', item.cpu);
+    seleccionarOInyectar('selectRam', item.ram);
+    seleccionarOInyectar('selectCapAlm', item.almacenamiento);
+    seleccionarOInyectar('selectSo', item.so);
+    seleccionarOInyectar('selectOffice', item.office);
+
+    const puertoVal = item.puerto || '';
+    puertoEnEdicionActual = puertoVal;
+    poblarPuertosSelect(puertoVal);
 
     document.getElementById('edit-badge').classList.remove('hidden');
     const registrarBtn = document.querySelectorAll('.nav-btn')[1];
     switchView('registrar', registrarBtn);
-}
-
-function cancelarEdicion() {
-    document.getElementById('activoForm').reset();
-    puertoEnEdicionActual = null;
-    document.getElementById('edit-badge').classList.add('hidden');
-    toggleCamposDinamicos();
-    poblarPuertosSelect();
-    const buscarBtn = document.querySelectorAll('.nav-btn')[0];
-    switchView('consultar', buscarBtn);
 }
 
 async function guardarActivoMovil() {
@@ -454,13 +543,14 @@ async function guardarActivoMovil() {
     const almacenamientoFinal = tipoAlm && capAlm ? `${tipoAlm} ${capAlm}` : (capAlm || tipoAlm);
     const so = document.getElementById('selectSo').value;
     const office = document.getElementById('selectOffice').value;
+    const observaciones = document.getElementById('inputObservaciones').value.trim();
 
     if (!hostname || !ip) {
         alert("Por favor completa al menos el Hostname y la IP.");
         return;
     }
 
-const payload = {
+    const payload = {
         action: 'guardar_equipo',
         equipo: {
             hostname: hostname,
@@ -479,24 +569,20 @@ const payload = {
             almacenamiento: almacenamientoFinal,
             so: so,
             office: office,
-            observaciones: ""
+            observaciones: observaciones
         }
     };
+
     try {
         const resultado = await enviarDatosCloud(payload);
-
-        // Verificación flexible para aceptar tanto objetos de éxito como respuestas booleanas o vacías si la BD guardó
         const fueExitoso = resultado === true || 
                            (resultado && resultado.status === "success") || 
                            (typeof resultado === "string" && resultado.includes("success"));
 
         if (fueExitoso || resultado) {
             alert("¡Registro guardado con éxito en Google Sheets!");
-            
-            // Forzar limpieza y salida del modo edición de forma garantizada
             cancelarEdicion(); 
 
-            // Recargar datos en segundo plano
             const respuestaCloud = await cargarDatosCloud('equipos', 'hfc_lan_master_cache');
             if (respuestaCloud) {
                 listaNodosRed = Array.isArray(respuestaCloud.equipos) ? respuestaCloud.equipos : (Array.isArray(respuestaCloud) ? respuestaCloud : []);
@@ -505,10 +591,96 @@ const payload = {
             }
         } else {
             alert("El servidor indicó un problema al guardar, pero revisa tu Google Sheets por si acaso.");
-            cancelarEdicion(); // Forzamos salida para que no quede trabado el teléfono en terreno
+            cancelarEdicion();
         }
     } catch (err) {
         console.error("Error al guardar:", err);
         alert("Error de comunicación al intentar guardar.");
+    }
+}
+
+function cancelarEdicion() {
+    document.getElementById('activoForm').reset();
+    puertoEnEdicionActual = null;
+    document.getElementById('edit-badge').classList.add('hidden');
+    toggleCamposDinamicos();
+    poblarPuertosSelect();
+    const buscarBtn = document.querySelectorAll('.nav-btn')[0];
+    switchView('consultar', buscarBtn);
+}
+
+function verDetallesObjeto(nodo) {
+    if (!nodo) return;
+
+    let item = {};
+    if (Array.isArray(nodo)) {
+        item = {
+            hostname: nodo[0] || '', ip: nodo[1] || '', mac: nodo[2] || '',
+            tipo: nodo[3] || '', marca: nodo[4] || '', modelo: nodo[5] || '',
+            propiedad: nodo[6] || '', rack: nodo[7] || '', sw: nodo[8] || '',
+            puerto: nodo[9] || '', patch_panel: nodo[10] || '', cpu: nodo[11] || '',
+            ram: nodo[12] || '', almacenamiento: nodo[13] || '', so: nodo[14] || '',
+            office: nodo[15] || '', observaciones: nodo[16] || ''
+        };
+    } else {
+        // Si viene como Objeto pero con las llaves cruzadas de la BD:
+        item = {
+            hostname: nodo.hostname || nodo.Hostname || nodo.nombre || '',
+            ip: nodo.ip || nodo.IP || '',
+            mac: nodo.mac || nodo.MAC || '',
+            tipo: nodo.tipo || nodo.Tipo || '',
+            marca: nodo.marca || nodo.Marca || '',
+            
+            // Rescatamos los valores reales de donde se hayan guardado por el desfase:
+            rack: nodo.rack || (nodo.puerto && nodo.puerto.startsWith('P') && nodo.puerto.length === 3 ? nodo.puerto : 'P1A'),
+            sw: nodo.sw || (nodo.cpu && nodo.cpu.includes('SW-') ? nodo.cpu : ''),
+            puerto: nodo.puerto && !nodo.puerto.startsWith('P1') ? nodo.puerto : (nodo.ram || ''),
+            patch_panel: nodo.patch_panel || nodo.roseta || '',
+            cpu: nodo.so && nodo.so.includes('Intel') ? nodo.so : (nodo.cpu || ''),
+            ram: nodo.office && nodo.office.includes('GB') ? nodo.office : (nodo.ram || ''),
+            almacenamiento: nodo.observaciones || nodo.almacenamiento || '',
+            so: nodo.almacenamiento && nodo.almacenamiento.includes('Mint') ? nodo.almacenamiento : '',
+            office: '',
+            observaciones: nodo.observaciones || ''
+        };
+    }
+
+    // Inyectar en el HTML de detalles...
+    document.getElementById('det-hostname').textContent = item.hostname || 'SIN-NOMBRE';
+    document.getElementById('det-tipo-badge').textContent = item.tipo || 'Dispositivo';
+    document.getElementById('det-rack').textContent = item.rack || '-';
+    document.getElementById('det-sw').textContent = item.sw || '-';
+    document.getElementById('det-puerto').textContent = item.puerto || '-';
+    document.getElementById('det-patch').textContent = item.patch_panel || '-';
+    document.getElementById('det-ip').textContent = item.ip || '-';
+    document.getElementById('det-mac').textContent = item.mac || '-';
+    document.getElementById('det-marca').textContent = item.marca || '-';
+    document.getElementById('det-cpu').textContent = item.cpu || '-';
+    document.getElementById('det-ram').textContent = item.ram || '-';
+    document.getElementById('det-alm').textContent = item.almacenamiento || '-';
+    document.getElementById('det-so').textContent = item.so || '-';
+    document.getElementById('det-office').textContent = item.office || '-';
+    document.getElementById('det-obs').textContent = item.observaciones || 'Sin observaciones registradas.';
+
+    const btnEditar = document.getElementById('btn-pasar-editar');
+    if (btnEditar) {
+        btnEditar.onclick = function() {
+            cargarParaEditarObjeto(nodo);
+        };
+    }
+
+    document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+    const targetView = document.getElementById('view-detalles');
+    if (targetView) targetView.classList.remove('hidden');
+
+    const subtitleEl = document.getElementById('header-subtitle');
+    if (subtitleEl) subtitleEl.innerText = 'Detalles del Activo';
+}
+
+function ocultarPantallaCarga() {
+    const loader = document.getElementById('loading-screen');
+    if (loader) {
+        loader.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => loader.remove(), 500);
     }
 }

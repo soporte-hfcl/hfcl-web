@@ -11,13 +11,25 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-500 selection:text-white">
 
-    <!-- Header Fijo Superior -->
+<!-- Pantalla de Carga Inmersiva (Estilo Escaneo de Red) -->
+    <div id="loading-screen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center space-y-3 transition-opacity duration-500">
+        <div class="relative flex items-center justify-center">
+            <div class="w-14 h-14 rounded-full border-2 border-blue-500/20 border-t-blue-500 animate-spin"></div>
+            <i class="fas fa-network-wired text-blue-400 absolute text-xs"></i>
+        </div>
+        <div class="text-center">
+            <p class="text-xs font-bold text-slate-100 tracking-wider">HFCL || NOC</p>
+            <p class="text-[10px] text-slate-400 font-mono mt-0.5">Sincronizando nodos e infraestructura...</p>
+        </div>
+    </div>
+
+<!-- Header Fijo Superior -->
     <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div class="flex items-center space-x-2.5">
+            <img src="https://lh3.googleusercontent.com/d/1TtwVLIHM7uHzU0WXCas6LjDpiZA673rc" alt="Logo Hospital" class="w-8 h-8 rounded-lg object-contain bg-slate-800 p-0.5 border border-slate-700">
             <div>
-                <h1 class="font-bold text-sm tracking-wide text-slate-200">HFCL // Hospital</h1>
-                <p id="header-subtitle" class="text-[10px] text-slate-400">Módulo de Consulta</p>
+                <h1 class="font-bold text-sm tracking-wide text-slate-200">HFCL || REDES</h1>
+                <p id="header-subtitle" class="text-[10px] text-slate-400">Panel de Control</p>
             </div>
         </div>
         <span id="edit-badge" class="hidden bg-amber-500/10 text-amber-400 text-[11px] px-2 py-1 rounded-md font-semibold border border-amber-500/20">Modo Edición ✏️</span>
@@ -25,6 +37,57 @@
 
     <!-- Contenido Principal Dinámico -->
     <main class="p-4 flex-1 max-w-md w-full mx-auto space-y-4 pb-28">
+
+        <!-- ================= VISTA 0: DASHBOARD / RESUMEN GENERAL ================= -->
+        <div id="view-dashboard" class="space-y-4 view-section">
+            <!-- Tarjeta de Bienvenida Hospital -->
+            <div class="bg-gradient-to-r from-blue-900/40 to-slate-900/80 border border-blue-500/20 p-4 rounded-2xl shadow-xl space-y-2">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs bg-blue-500/20 text-blue-400 px-2.5 py-0.5 rounded-full font-semibold">Hospital de Lanco</span>
+                    <span class="text-[10px] text-slate-400">Área Informática</span>
+                </div>
+                <h2 class="text-base font-bold text-slate-100">Panel de Control de Terreno</h2>
+                <p class="text-xs text-slate-300">Resumen general de infraestructura LAN, nodos y dispositivos activos.</p>
+            </div>
+
+            <!-- Grid de Estadísticas (KPIs) -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl shadow-md space-y-1">
+                    <div class="text-slate-400 text-[11px] font-medium flex items-center justify-between">
+                        <span>Total Equipos</span>
+                        <i class="fas fa-desktop text-blue-400"></i>
+                    </div>
+                    <div id="kpi-total-equipos" class="text-xl font-bold text-slate-100 font-mono">0</div>
+                    <div class="text-[10px] text-emerald-400">Sincronizado con Sheets</div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl shadow-md space-y-1">
+                    <div class="text-slate-400 text-[11px] font-medium flex items-center justify-between">
+                        <span>Gabinetes Racks</span>
+                        <i class="fas fa-server text-amber-400"></i>
+                    </div>
+                    <div class="text-xl font-bold text-slate-100 font-mono">6</div>
+                    <div class="text-[10px] text-slate-400">Pisos 1 y 2 habilitados</div>
+                </div>
+            </div>
+
+            <!-- Accesos Rápidos de Terreno -->
+            <div class="space-y-2 pt-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400 px-1">Acciones Rápidas</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="switchView('consultar', document.querySelectorAll('.nav-btn')[1])" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl text-left transition space-y-1">
+                        <div class="text-blue-400"><i class="fas fa-search"></i></div>
+                        <div class="text-xs font-bold text-slate-200">Buscar Activo</div>
+                        <div class="text-[10px] text-slate-400">IP, Hostname o MAC</div>
+                    </button>
+                    <button onclick="switchView('registrar', document.querySelectorAll('.nav-btn')[2])" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-3 rounded-xl text-left transition space-y-1">
+                        <div class="text-emerald-400"><i class="fas fa-plus-circle"></i></div>
+                        <div class="text-xs font-bold text-slate-200">Nuevo Registro</div>
+                        <div class="text-[10px] text-slate-400">Añadir a Sheets</div>
+                    </button>
+                </div>
+            </div>
+        </div>
         
         <!-- ================= VISTA 1: CONSULTAR / BUSCAR ================= -->
         <div id="view-consultar" class="space-y-4 view-section">
@@ -46,20 +109,20 @@
 
         <!-- ================= VISTA 2: REGISTRAR / EDITAR FORMULARIO ================= -->
         <div id="view-registrar" class="space-y-4 view-section hidden">
-            <form id="activoForm" class="space-y-4 bg-slate-900/60 border border-slate-800 p-4 rounded-2xl shadow-xl">
+            <form id="activoForm" class="space-y-3 bg-slate-900/80 border border-slate-800 p-3.5 rounded-2xl shadow-xl">
                 
-                <div class="space-y-3">
+                <div class="space-y-2.5">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-1">1. Red y Ubicación Física</h2>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Rack</label>
-                            <select id="formRack" onchange="filtrarSwitchesPorRack()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                            <label class="block text-[11px] text-slate-400 mb-1">Rack</label>
+                            <select id="formRack" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                 <option value="">Seleccione Rack...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Switch</label>
-                            <select id="formSwitch" onchange="poblarPuertosSelect()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
+                            <label class="block text-[11px] text-slate-400 mb-1">Switch</label>
+                            <select id="formSwitch" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
                                 <option value="">Seleccione Switch...</option>
                             </select>
                         </div>
@@ -67,68 +130,68 @@
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Puerto Switch</label>
-        <select id="selectPuerto" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
-            <option value="">Seleccione puerto...</option>
-        </select>
-    </div>
-    <div>
-        <label class="block text-xs text-slate-400 mb-1">Patch Panel / Roseta</label>
-        <select id="selectPatchPanel" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
-            <option value="">Cargando desde hoja red...</option>
-        </select>
+                            <label class="block text-[11px] text-slate-400 mb-1">Puerto Switch</label>
+                            <select id="selectPuerto" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
+                                <option value="">Seleccione puerto...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">Patch Panel / Roseta</label>
+                            <select id="selectPatchPanel" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
+                                <option value="">Seleccione roseta...</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-3 pt-2">
+                <div class="space-y-2.5 pt-1">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-1">2. Datos Únicos</h2>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Hostname</label>
+                        <label class="block text-[11px] text-slate-400 mb-1">Hostname</label>
                         <input type="text" id="inputHostname" placeholder="PC-OIRS-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono uppercase">
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">IP</label>
+                            <label class="block text-[11px] text-slate-400 mb-1">IP</label>
                             <input type="text" id="inputIp" placeholder="10.10.X.X" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">MAC</label>
+                            <label class="block text-[11px] text-slate-400 mb-1">MAC</label>
                             <input type="text" id="inputMac" placeholder="XX:XX:XX..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono text-[11px]">
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. Clasificación y Atributos Separados Limpiamente -->
-                <div class="space-y-3 pt-2">
+                <!-- 3. Clasificación y Hardware -->
+                <div class="space-y-2.5 pt-1">
                     <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-1">3. Clasificación y Hardware</h2>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Tipo de Dispositivo</label>
-                            <select id="selectTipo" onchange="toggleCamposDinamicos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                            <label class="block text-[11px] text-slate-400 mb-1">Tipo de Dispositivo</label>
+                            <select id="selectTipo" onchange="toggleCamposDinamicos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                 <option value="">Seleccione tipo...</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Marca</label>
-                            <select id="selectMarca" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                            <label class="block text-[11px] text-slate-400 mb-1">Marca</label>
+                            <select id="selectMarca" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                 <option value="">Seleccione marca...</option>
                             </select>
                         </div>
                     </div>
 
-                    <!-- Campos Técnicos Dinámicos (Solo para PCs / Notebooks) -->
-                    <div id="camposComputador" class="space-y-3 hidden pt-2 border-t border-slate-800/60">
+                    <!-- Campos Técnicos Dinámicos -->
+                    <div id="camposComputador" class="space-y-2.5 hidden pt-2 border-t border-slate-800/60">
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Procesador (CPU)</label>
-                                <select id="selectCpu" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
+                                <label class="block text-[11px] text-slate-400 mb-1">Procesador (CPU)</label>
+                                <select id="selectCpu" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
                                     <option value="">Seleccione CPU...</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Memoria RAM</label>
-                                <select id="selectRam" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
+                                <label class="block text-[11px] text-slate-400 mb-1">Memoria RAM</label>
+                                <select id="selectRam" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
                                     <option value="">Seleccione RAM...</option>
                                 </select>
                             </div>
@@ -136,14 +199,14 @@
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Tipo Almacenamiento</label>
-                                <select id="selectTipoAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                <label class="block text-[11px] text-slate-400 mb-1">Tipo Almacenamiento</label>
+                                <select id="selectTipoAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                     <option value="">Seleccione tipo...</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Capacidad Disco</label>
-                                <select id="selectCapAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-mono">
+                                <label class="block text-[11px] text-slate-400 mb-1">Capacidad Disco</label>
+                                <select id="selectCapAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-mono">
                                     <option value="">Seleccione capacidad...</option>
                                 </select>
                             </div>
@@ -151,14 +214,14 @@
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Sistema Operativo</label>
-                                <select id="selectSo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                <label class="block text-[11px] text-slate-400 mb-1">Sistema Operativo</label>
+                                <select id="selectSo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                     <option value="">Seleccione SO...</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs text-slate-400 mb-1">Licencia Office</label>
-                                <select id="selectOffice" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+                                <label class="block text-[11px] text-slate-400 mb-1">Licencia Office</label>
+                                <select id="selectOffice" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200">
                                     <option value="">Seleccione Office...</option>
                                 </select>
                             </div>
@@ -166,12 +229,18 @@
                     </div>
                 </div>
 
+                <!-- 4. Observaciones y Notas en Terreno -->
+                <div class="space-y-1.5 pt-1">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-blue-400">4. Observaciones</label>
+                    <textarea id="inputObservaciones" rows="2" placeholder="Detalles de ubicación, estado de red o notas..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 font-sans"></textarea>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2 pt-2">
-                    <button type="button" onclick="cancelarEdicion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3 rounded-xl text-xs border border-slate-700 transition">
+                    <button type="button" onclick="cancelarEdicion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3 rounded-xl text-xs border border-slate-700 transition shadow-md">
                         Cancelar ✖
                     </button>
                     <button type="button" onclick="guardarActivoMovil()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl text-xs shadow-lg shadow-blue-900/40 transition">
-                        Guardar en Sheets 💾
+                        Guardar 💾
                     </button>
                 </div>
             </form>
@@ -182,11 +251,70 @@
             <p class="text-xs text-slate-400 text-center py-4">Visualizador de gabinetes y ocupación general.</p>
         </div>
 
+        <!-- ================= VISTA 4: DETALLES DE EQUIPO (SOLO LECTURA) ================= -->
+        <div id="view-detalles" class="space-y-4 view-section hidden">
+            <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div>
+                        <span id="det-tipo-badge" class="text-[10px] bg-blue-500/15 text-blue-400 px-2.5 py-1 rounded font-mono font-semibold">Dispositivo</span>
+                        <h2 id="det-hostname" class="text-base font-bold text-slate-100 mt-1">HOSTNAME</h2>
+                    </div>
+                    <button type="button" onclick="switchView('consultar', document.querySelectorAll('.nav-btn')[0])" class="text-slate-400 hover:text-slate-200 text-xs bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-700">
+                        Volver ✕
+                    </button>
+                </div>
+
+                <!-- Red y Ubicación -->
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Ubicación y Red</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div>Rack: <span id="det-rack" class="text-slate-200 font-bold">-</span></div>
+                        <div>Switch: <span id="det-sw" class="text-slate-200 font-bold">-</span></div>
+                        <div>Puerto: <span id="det-puerto" class="text-blue-400 font-bold">-</span></div>
+                        <div>Patch Panel: <span id="det-patch" class="text-slate-200 font-bold">-</span></div>
+                        <div class="col-span-2 pt-1 border-t border-slate-800/40">IP: <span id="det-ip" class="text-emerald-400 font-bold">-</span></div>
+                        <div class="col-span-2">MAC: <span id="det-mac" class="text-slate-300">-</span></div>
+                    </div>
+                </div>
+
+                <!-- Hardware y Software -->
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Hardware y Software</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div>Marca: <span id="det-marca" class="text-slate-200 font-medium">-</span></div>
+                        <div>CPU: <span id="det-cpu" class="text-slate-200 font-mono">-</span></div>
+                        <div>RAM: <span id="det-ram" class="text-slate-200 font-mono">-</span></div>
+                        <div>Almacenamiento: <span id="det-alm" class="text-slate-200 font-mono">-</span></div>
+                        <div>Sistema Operativo: <span id="det-so" class="text-slate-200">-</span></div>
+                        <div>Office: <span id="det-office" class="text-slate-200">-</span></div>
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="space-y-1.5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Observaciones</h3>
+                    <p id="det-obs" class="text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60 text-slate-300 italic min-h-[40px]">Sin observaciones registradas.</p>
+                </div>
+
+                <!-- Acciones -->
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" id="btn-pasar-editar" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl text-xs shadow-lg shadow-blue-900/40 transition flex justify-center items-center space-x-2">
+                        <i class="fas fa-edit"></i>
+                        <span>Editar este equipo ✏️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- Barra de Navegación Inferior -->
-    <nav class="bg-slate-900/90 backdrop-blur-md border-t border-slate-800 fixed bottom-0 left-0 right-0 py-2.5 px-6 flex justify-around items-center z-50">
-        <button onclick="switchView('consultar', this)" class="nav-btn flex flex-col items-center text-blue-400 transition">
+<!-- Barra de Navegación Inferior Actualizada -->
+    <nav class="bg-slate-900/90 backdrop-blur-md border-t border-slate-800 fixed bottom-0 left-0 right-0 py-2.5 px-4 flex justify-around items-center z-50">
+        <button onclick="switchView('dashboard', this)" class="nav-btn flex flex-col items-center text-blue-400 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-16zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-16z"></path></svg>
+            <span class="text-[10px] mt-1 font-medium">Inicio</span>
+        </button>
+        <button onclick="switchView('consultar', this)" class="nav-btn flex flex-col items-center text-slate-400 hover:text-slate-200 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <span class="text-[10px] mt-1 font-medium">Buscar</span>
         </button>
