@@ -5,7 +5,7 @@
  * Centraliza todas las peticiones fetch para la intranet.
  */
 
-// Asegúrate de colocar aquí tu URL real de la Web App de Google Apps Script
+// URL única y real de la Web App de Google Apps Script
 const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby_MZCFYKhRSaKl0hoFQWW5G6nZQNX8nC8CXljeGdrgeLt_Hb43SHMIFjJ4e3AbJkQPAA/exec";
 
 /**
@@ -16,9 +16,18 @@ const URL_API_SHEETS = "https://script.google.com/macros/s/AKfycby_MZCFYKhRSaKl0
  */
 async function cargarDatosCloud(recurso = '', claveCache = null) {
     try {
-        // Hacemos el GET directo a la URL de Apps Script sin parámetros innecesarios
-        const respuesta = await fetch(URL_API_SHEETS);
-        const datos = await respuesta.json();
+        const respuesta = await fetch(URL_API_SHEETS, {
+            method: "GET",
+            redirect: "follow"
+        });
+        
+        const textoRespuesta = await respuesta.text();
+        
+        if (!textoRespuesta || textoRespuesta.includes("No se pudo abrir") || textoRespuesta.includes("<!DOCTYPE html>")) {
+            throw new Error("Google devolvió una página de error o bloqueo de sesión.");
+        }
+
+        const datos = JSON.parse(textoRespuesta);
         
         if (datos && (typeof datos === 'object')) {
             if (claveCache) {
@@ -28,7 +37,7 @@ async function cargarDatosCloud(recurso = '', claveCache = null) {
         }
         return {};
     } catch (error) {
-        console.warn(`Sin conexión a la nube, intentando respaldo local...`, error);
+        console.warn(`Aviso de red, recurriendo a caché local de respaldo...`, error);
         
         if (claveCache) {
             const cacheLocal = localStorage.getItem(claveCache);
@@ -51,26 +60,32 @@ async function cargarDatosCloud(recurso = '', claveCache = null) {
  */
 async function enviarDatosCloud(payload) {
     try {
-        const respuesta = await fetch(URL_API_SHEETS, {
-            method: "POST",
+        const response = await fetch(URL_API_SHEETS, {
+            method: 'POST',
+            redirect: 'follow', // Forzar el seguimiento correcto de la redirección de Google
             headers: {
-                "Content-Type": "text/plain;charset=utf-8" // Vital para que Google Apps Script procese el JSON sin bloqueos CORS
+                'Content-Type': 'text/plain;charset=utf-8' // Evita que Google dispare preflight CORS complejos
             },
-            body: JSON.stringify(payload),
-            redirect: "follow" // Necesario para seguir la redirección interna de Google
+            body: JSON.stringify(payload)
         });
         
-        const textoRespuesta = await respuesta.text();
+        const text = await response.text();
         
+        // Validar si Google devolvió la página HTML de error 404 en vez del JSON
+        if (!text || text.includes("<!DOCTYPE html>") || text.includes("No se pudo abrir")) {
+            console.error("Google Apps Script bloqueó el POST o devolvió HTML de error:", text);
+            return false;
+        }
+
         try {
-            return JSON.parse(textoRespuesta);
+            return JSON.parse(text);
         } catch (e) {
-            console.error("El servidor no devolvió un JSON válido:", textoRespuesta);
-            return { status: "error", message: "Respuesta inválida del servidor" };
+            console.error("El servidor no devolvió un JSON válido:", text);
+            return false;
         }
     } catch (error) {
-        console.error("Error en la operación de escritura en la nube:", error);
-        return { status: "error", message: error.message };
+        console.error("Error de red en enviarDatosCloud:", error);
+        return false;
     }
 }
 

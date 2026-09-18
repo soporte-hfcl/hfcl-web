@@ -3,6 +3,7 @@
  * CONTROLADOR DE RED - VERSIÓN MÓVIL (HFCL)
  * ==========================================
  * Ubicación: movil/js/red.js
+ * Fuente de verdad estricta: Google Sheets (code.gs)
  */
 
 let listaNodosRed = [];
@@ -11,56 +12,106 @@ let listaInfoMaestra = {};
 let puertoEnEdicionActual = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("Sincronizando activos e infraestructura de red...");
-    
-    try {
-        const respuestaCloud = await cargarDatosCloud('equipos', 'hfc_lan_master_cache');
-        if (respuestaCloud) {
-            listaNodosRed = Array.isArray(respuestaCloud.equipos) ? respuestaCloud.equipos : (Array.isArray(respuestaCloud) ? respuestaCloud : []);
-            listaInfraestructuraRed = Array.isArray(respuestaCloud.red) ? respuestaCloud.red : [];
-            
-            if (respuestaCloud.info) {
-                listaInfoMaestra = respuestaCloud.info;
-            }
+    console.log("[NOC] Inicializando entorno móvil Hospital de Lanco...");
+
+    // 1. CARGA INSTANTÁNEA DESDE CACHÉ LOCAL
+    const cacheEmergencia = localStorage.getItem('hfc_lan_master_cache');
+    if (cacheEmergencia) {
+        try {
+            const datosCache = JSON.parse(cacheEmergencia);
+            console.log("[NOC] Pintando interfaz preliminar con caché local...");
+            finalizarCargaSegura(datosCache.equipos || [], datosCache.red || [], datosCache.info || null, false);
+        } catch (e) {
+            console.warn("[NOC] Error al parsear caché local:", e);
         }
-    } catch (err) {
-        console.error("Error al conectar con la nube:", err);
-        listaNodosRed = [];
-    } finally {
-
-        poblarSelectoresDesdeBD();
-        renderizarResultadosRed(listaNodosRed);
-        renderizarVistaRacks(listaNodosRed);
-
-        const kpiTotal = document.getElementById('kpi-total-equipos');
-        if (kpiTotal) kpiTotal.textContent = listaNodosRed.length;
-
-        ocultarPantallaCarga();
     }
 
+    // 2. PETICIÓN ASÍNCRONA A LA NUBE (Google Apps Script)
+    try {
+        console.log("[NOC] Consultando endpoint de Google Apps Script...");
+        const respuestaCloud = await cargarDatosCloud('equipos', 'hfc_lan_master_cache');
+
+        let nodos = [];
+        let infra = [];
+        let info = null;
+
+        if (respuestaCloud) {
+            nodos = Array.isArray(respuestaCloud.equipos) ? respuestaCloud.equipos : (Array.isArray(respuestaCloud) ? respuestaCloud : []);
+            infra = Array.isArray(respuestaCloud.red) ? respuestaCloud.red : [];
+            if (respuestaCloud.info) info = respuestaCloud.info;
+        }
+
+        console.log(`[NOC] Sincronización exitosa. Total nodos: ${nodos.length}, Infra: ${infra.length}`);
+        
+        // 3. RENDERIZADO DEFINITIVO Y CIERRE DE LOADER
+        finalizarCargaSegura(nodos, infra, info, true);
+
+    } catch (err) {
+        console.error("[NOC] Error de comunicación cloud:", err);
+        destruirLoaderDefinitivo();
+    }
+});
+
+function finalizarCargaSegura(nodos, infra = [], info = null, apagarLoader = true) {
+    window.listaNodosRed = nodos;
+    window.listaInfraestructuraRed = infra;
+    if (info) window.listaInfoMaestra = info;
+
+    ejecutarSeguro(() => poblarSelectoresDesdeBD(), "poblarSelectoresDesdeBD");
+    ejecutarSeguro(() => renderizarResultadosRed(window.listaNodosRed), "renderizarResultadosRed");
+    ejecutarSeguro(() => renderizarVistaRacks(window.listaNodosRed), "renderizarVistaRacks");
+    
+    ejecutarSeguro(() => {
+        const kpiTotal = document.getElementById('kpi-total-equipos');
+        if (kpiTotal) kpiTotal.textContent = window.listaNodosRed.length;
+    }, "KPI Total");
+
+    configurarBuscadorGlobalOnce();
+
+    if (apagarLoader) {
+        destruirLoaderDefinitivo();
+    }
+}
+
+function ejecutarSeguro(fn, nombreAccion) {
+    try {
+        fn();
+    } catch (e) {
+        console.error(`[NOC Error] Falló la ejecución de '${nombreAccion}':`, e);
+    }
+}
+
+function destruirLoaderDefinitivo() {
+    const loaderById = document.getElementById('loading-screen') || document.getElementById('pantalla-carga') || document.getElementById('app-loader');
+    if (loaderById) loaderById.remove();
+
+    document.querySelectorAll('div, section').forEach(el => {
+        if (el && el.innerText && el.innerText.includes('Sincronizando')) {
+            el.remove();
+        }
+    });
+
+    console.log("[NOC] Loader destruido y pantalla liberada con éxito.");
+}
+
+function configurarBuscadorGlobalOnce() {
     const searchInput = document.getElementById('globalSearch');
-    if (searchInput) {
+    if (searchInput && !searchInput.dataset.listenerConfigured) {
+        searchInput.dataset.listenerConfigured = "true";
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
-            const filtrados = listaNodosRed.filter(nodo => {
-                const hostname = nodo.hostname || nodo.Hostname || nodo.nombre || '';
-                const ip = nodo.ip || nodo.IP || '';
-                const mac = nodo.mac || nodo.MAC || '';
-                const puerto = nodo.puerto || nodo.Puerto || '';
-                const tipo = nodo.tipo || nodo.Tipo || '';
-                const rack = nodo.rack || nodo.Rack || '';
-                const patch = nodo.patch_panel || nodo.roseta || nodo.Roseta || '';
-                const sw = nodo.sw || nodo.switch || '';
-                
-                return `${hostname} ${ip} ${mac} ${puerto} ${tipo} ${rack} ${patch} ${sw}`.toLowerCase().includes(query);
+            const filtrados = window.listaNodosRed.filter(nodo => {
+                const text = `${nodo.hostname || ''} ${nodo.ip || ''} ${nodo.mac || ''} ${nodo.rack || ''} ${nodo.tipo || ''} ${nodo.puerto || ''}`.toLowerCase();
+                return text.includes(query);
             });
             renderizarResultadosRed(filtrados);
         });
     }
+}
 
-    poblarPuertosSelect();
-});
-
+/**
+ * Poblado estricto de selectores filtrando guiones (-) y vacíos desde la hoja 'info'
+ */
 function poblarSelectoresDesdeBD() {
     const selectRack = document.getElementById('formRack');
     const selectPatchPanel = document.getElementById('selectPatchPanel');
@@ -81,39 +132,64 @@ function poblarSelectoresDesdeBD() {
     const marcasSet = new Set();
     const cpuSet = new Set();
     const ramSet = new Set();
-    const tipoAlmSet = new Set();
-    const capAlmSet = new Set();
+    const almacenamientoSet = new Set();
+    const capacidadSet = new Set();
     const soSet = new Set();
     const officeSet = new Set();
 
-    if (listaInfoMaestra && typeof listaInfoMaestra === 'object') {
-        for (const colKey in listaInfoMaestra) {
-            if (Array.isArray(listaInfoMaestra[colKey])) {
-                listaInfoMaestra[colKey].forEach(val => {
-                    const vStr = String(val).trim();
-                    if (!vStr) return;
-                    const k = colKey.toLowerCase();
-
-                    if (k.includes('tipos_dispositivos')) tiposSet.add(vStr);
-                    else if (k.includes('marcas')) marcasSet.add(vStr);
-                    else if (k.includes('procesadores_cpu')) cpuSet.add(vStr);
-                    else if (k.includes('opciones_ram')) ramSet.add(vStr);
-                    else if (k.includes('tipos_almacenamiento')) tipoAlmSet.add(vStr);
-                    else if (k.includes('capacidades_discos')) capAlmSet.add(vStr);
-                    else if (k.includes('sistemas_operativos')) soSet.add(vStr);
-                    else if (k.includes('licencias_office')) officeSet.add(vStr);
-                });
+    // 1. Extracción estricta y limpia basada en las claves exactas de la hoja 'info' (code.gs)
+    const infoData = window.listaInfoMaestra || listaInfoMaestra;
+    if (infoData && typeof infoData === 'object') {
+        const volcarColumnaExacta = (keyProp, targetSet) => {
+            // Buscamos coincidencia exacta o normalizada de la cabecera
+            for (const k in infoData) {
+                const kClean = k.toLowerCase().trim();
+                if (kClean === keyProp.toLowerCase() && Array.isArray(infoData[k])) {
+                    infoData[k].forEach(val => {
+                        const vStr = String(val).trim();
+                        if (vStr && vStr !== '-' && vStr !== '""' && vStr !== "''") {
+                            targetSet.add(vStr);
+                        }
+                    });
+                }
             }
-        }
+        };
+
+        volcarColumnaExacta('tipo', tiposSet);
+        volcarColumnaExacta('marca', marcasSet);
+        volcarColumnaExacta('cpu', cpuSet);
+        volcarColumnaExacta('ram', ramSet);
+        volcarColumnaExacta('almacenamiento', almacenamientoSet);
+        volcarColumnaExacta('capacidad', capacidadSet);
+        volcarColumnaExacta('so', soSet);
+        volcarColumnaExacta('office', officeSet);
     }
 
-    if (Array.isArray(listaInfraestructuraRed)) {
-        listaInfraestructuraRed.forEach(item => {
-            const rackId = item.id_racks || item.rack || item.Rack || item.id_racksid;
-            const patchPanel = item.patch_panel || item.roseta || item.punto || item.Roseta;
-            
-            if (rackId) racksSet.add(rackId.toString().trim());
-            if (patchPanel) patchPanelsSet.add(patchPanel.toString().trim());
+    // 2. Respaldo complementario desde los nodos ya registrados en la hoja 'equipos'
+    if (window.listaNodosRed && Array.isArray(window.listaNodosRed)) {
+        window.listaNodosRed.forEach(n => {
+            if (n.tipo) tiposSet.add(String(n.tipo).trim());
+            if (n.marca) marcasSet.add(String(n.marca).trim());
+            if (n.cpu) cpuSet.add(String(n.cpu).trim());
+            if (n.ram) ramSet.add(String(n.ram).trim());
+            if (n.almacenamiento) almacenamientoSet.add(String(n.almacenamiento).trim());
+            if (n.so) soSet.add(String(n.so).trim());
+            if (n.office) officeSet.add(String(n.office).trim());
+            if (n.rack) racksSet.add(String(n.rack).trim());
+        });
+    }
+
+    // 3. Infraestructura física de la hoja 'red'
+    if (Array.isArray(window.listaInfraestructuraRed)) {
+        window.listaInfraestructuraRed.forEach(item => {
+            if (item.id_racks) {
+                const rVal = String(item.id_racks).trim();
+                if (rVal && rVal !== '-') racksSet.add(rVal);
+            }
+            if (item.patch_panel) {
+                const pVal = String(item.patch_panel).trim();
+                if (pVal && pVal !== '-') patchPanelsSet.add(pVal);
+            }
         });
     }
 
@@ -124,14 +200,12 @@ function poblarSelectoresDesdeBD() {
     function rellenarSelect(selectEl, setValues, defaultText) {
         if (!selectEl) return;
         selectEl.innerHTML = `<option value="">${defaultText}</option>`;
-        if (setValues.size > 0) {
-            setValues.forEach(val => {
-                const opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = val;
-                selectEl.appendChild(opt);
-            });
-        }
+        Array.from(setValues).sort().forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            selectEl.appendChild(opt);
+        });
     }
 
     rellenarSelect(selectRack, racksSet, "Seleccione Rack...");
@@ -140,10 +214,25 @@ function poblarSelectoresDesdeBD() {
     rellenarSelect(selectMarca, marcasSet, "Seleccione marca...");
     rellenarSelect(selectCpu, cpuSet, "Seleccione CPU...");
     rellenarSelect(selectRam, ramSet, "Seleccione RAM...");
-    rellenarSelect(selectTipoAlm, tipoAlmSet, "Seleccione tipo almacenamiento...");
-    rellenarSelect(selectCapAlm, capAlmSet, "Seleccione capacidad disco...");
+    rellenarSelect(selectTipoAlm, almacenamientoSet, "Seleccione tipo almacenamiento...");
+    rellenarSelect(selectCapAlm, capacidadSet, "Seleccione capacidad disco...");
     rellenarSelect(selectSo, soSet, "Seleccione SO...");
     rellenarSelect(selectOffice, officeSet, "Seleccione Office...");
+}
+
+function poblarPuertosSelect(puertoActualForzado = null) {
+    const selectP = document.getElementById('selectPuerto');
+    if (!selectP) return;
+
+    selectP.innerHTML = '<option value="">Seleccione puerto...</option>';
+    for (let i = 1; i <= 24; i++) {
+        const pStr = "P" + (i < 10 ? "0" + i : i);
+        const opt = document.createElement('option');
+        opt.value = pStr;
+        opt.textContent = `Puerto ${i < 10 ? '0' + i : i}`;
+        selectP.appendChild(opt);
+    }
+    if (puertoActualForzado) selectP.value = puertoActualForzado;
 }
 
 function filtrarSwitchesPorRack(rackSeleccionadoForzado = null) {
@@ -158,11 +247,9 @@ function filtrarSwitchesPorRack(rackSeleccionadoForzado = null) {
 
     if (Array.isArray(listaInfraestructuraRed)) {
         listaInfraestructuraRed.forEach(item => {
-            const r = item.id_racks || item.rack || item.id_racksid;
-            const sw = item.id_sw || item.swnombre || item.switch;
-            
-            if (r && sw && r.toString().trim().toLowerCase() === rackActual.toLowerCase()) {
-                switchesDelRack.add(sw.toString().trim());
+            if (item.id_racks && item.id_sw && String(item.id_racks).trim().toLowerCase() === rackActual.toLowerCase()) {
+                const swVal = String(item.id_sw).trim();
+                if (swVal && swVal !== '-') switchesDelRack.add(swVal);
             }
         });
     }
@@ -219,28 +306,26 @@ function renderizarResultadosRed(datos) {
 
     let html = '';
     datos.forEach(nodo => {
-        // Normalizamos el objeto para asegurar lectura limpia
         const item = {
-            hostname: nodo.hostname || nodo.Hostname || nodo.nombre || 'SIN-NOMBRE',
-            ip: nodo.ip || nodo.IP || 'S/IP',
-            mac: nodo.mac || nodo.MAC || 'S/MAC',
-            tipo: nodo.tipo || nodo.Tipo || 'PC / Notebook',
-            marca: nodo.marca || nodo.Marca || '',
-            rack: nodo.rack || nodo.Rack || 'P1A',
-            sw: nodo.sw || nodo.switch || '',
+            hostname: nodo.hostname || 'SIN-NOMBRE',
+            ip: nodo.ip || 'S/IP',
+            mac: nodo.mac || 'S/MAC',
+            tipo: nodo.tipo || 'PC / Notebook',
+            marca: nodo.marca || '',
+            rack: nodo.rack || 'P1A',
+            sw: nodo.sw || '',
             puerto: nodo.puerto || '',
             observaciones: nodo.observaciones || ''
         };
 
-        // 2. Iconografía dinámica según el tipo de hardware
         let iconoHtml = '<i class="fas fa-desktop text-blue-400"></i>';
-        let bordeColor = 'border-l-blue-500'; // Estilo SysAdmin por defecto (Estaciones de trabajo)
+        let bordeColor = 'border-l-blue-500';
         
         const tipoLower = item.tipo.toLowerCase();
         if (tipoLower.includes('impresora') || tipoLower.includes('printer')) {
             iconoHtml = '<i class="fas fa-print text-amber-400"></i>';
             bordeColor = 'border-l-amber-500';
-        } else if (tipoLower.includes('switch') || tipoLower.includes('router') || tipoLower.includes('ap') || tipoLower.includes('red')) {
+        } else if (tipoLower.includes('switch') || tipoLower.includes('router') || tipoLower.includes('ap')) {
             iconoHtml = '<i class="fas fa-network-wired text-emerald-400"></i>';
             bordeColor = 'border-l-emerald-500';
         } else if (tipoLower.includes('servidor') || tipoLower.includes('server')) {
@@ -301,8 +386,7 @@ function renderizarVistaRacks(datos) {
     const racksAgrupados = {};
     if (Array.isArray(datos)) {
         datos.forEach(nodo => {
-            // Normalizamos la lectura del rack para agruparlos bien
-            const rackKey = (nodo.rack || nodo.Rack || nodo.ubicacion || 'P1A').toString().trim().toUpperCase();
+            const rackKey = (nodo.rack || 'P1A').toString().trim().toUpperCase();
             if (!racksAgrupados[rackKey]) racksAgrupados[rackKey] = [];
             racksAgrupados[rackKey].push(nodo);
         });
@@ -327,28 +411,37 @@ function renderizarVistaRacks(datos) {
 
         nivel.racks.forEach(nombreRack => {
             const elementos = racksAgrupados[nombreRack] || [];
-            const totalPuertosEstimados = 24; // Capacidad estándar por switch principal
-            const ocupacionPorcentaje = Math.min(Math.round((elementos.length / totalPuertosEstimados) * 100), 100);
+            
+            const elemsSwitchA = elementos.filter(el => {
+                const sw = (el.sw || '').toLowerCase();
+                return !sw.includes('b') && !sw.includes('2');
+            });
+            
+            const elemsSwitchB = elementos.filter(el => {
+                const sw = (el.sw || '').toLowerCase();
+                return sw.includes('b') || sw.includes('2');
+            });
 
-            // Definir color de la barra según la saturación
-            let colorBarra = "bg-emerald-500";
+            const capSwitch = 24;
+            const porcA = Math.min(Math.round((elemsSwitchA.length / capSwitch) * 100), 100);
+            const porcB = Math.min(Math.round((elemsSwitchB.length / capSwitch) * 100), 100);
+            const ocupacionTotalPorcentaje = Math.min(Math.round((elementos.length / 48) * 100), 100);
+
             let colorBadge = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
-            if (ocupacionPorcentaje > 75) {
-                colorBarra = "bg-red-500";
+            if (ocupacionTotalPorcentaje > 75) {
                 colorBadge = "text-red-400 bg-red-500/10 border-red-500/20";
-            } else if (ocupacionPorcentaje > 40) {
-                colorBarra = "bg-amber-500";
+            } else if (ocupacionTotalPorcentaje > 40) {
                 colorBadge = "text-amber-400 bg-amber-500/10 border-amber-500/20";
             }
-            
+
             let htmlElementos = '';
             if (elementos.length > 0) {
                 elementos.forEach(el => {
-                    const hName = el.hostname || el.Hostname || el.nombre || 'Equipo';
-                    const ipVal = el.ip || el.IP || 'S/IP';
-                    const swVal = el.sw || el.switch || 'Switch';
-                    const portVal = el.puerto || el.Puerto || 'P00';
-                    const patchVal = el.patch_panel || el.roseta || 'D00';
+                    const hName = el.hostname || 'Equipo';
+                    const ipVal = el.ip || 'S/IP';
+                    const swVal = el.sw || 'Switch';
+                    const portVal = el.puerto || 'P00';
+                    const patchVal = el.patch_panel || 'D00';
                     
                     htmlElementos += `
                         <div class="flex justify-between items-center text-xs bg-slate-950/80 p-2.5 rounded-xl border border-slate-800/60">
@@ -369,23 +462,39 @@ function renderizarVistaRacks(datos) {
                 `;
             }
 
-            // Renderizado del Rack con la nueva barra de ocupación integrada
             htmlRacksGlobal += `
                 <details class="group bg-slate-900/60 border border-slate-800 rounded-2xl shadow-lg overflow-hidden transition">
-                    <summary class="flex flex-col p-3.5 cursor-pointer select-none hover:bg-slate-800/40 space-y-2">
+                    <summary class="flex flex-col p-3.5 cursor-pointer select-none hover:bg-slate-800/40 space-y-2.5">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center space-x-2.5">
                                 <div class="w-2 h-2 rounded-full bg-blue-400 group-open:bg-emerald-400 transition"></div>
                                 <h4 class="text-xs font-bold text-slate-200 tracking-wide">Rack ${nombreRack}</h4>
                             </div>
                             <div class="flex items-center space-x-2">
-                                <span class="text-[10px] px-2 py-0.5 rounded font-semibold border ${colorBadge}">${elementos.length} equipos (${ocupacionPorcentaje}%)</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded font-semibold border ${colorBadge}">${elementos.length}/48 puertos (${ocupacionTotalPorcentaje}%)</span>
                                 <i class="fas fa-chevron-down text-[10px] text-slate-400 group-open:rotate-180 transition-transform"></i>
                             </div>
                         </div>
-                        <!-- Barra de Ocupación Visual -->
-                        <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800/80">
-                            <div class="${colorBarra} h-full rounded-full transition-all duration-500" style="width: ${ocupacionPorcentaje}%"></div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                                    <span>Switch A (24p)</span>
+                                    <span>${elemsSwitchA.length}/24</span>
+                                </div>
+                                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
+                                    <div class="bg-blue-500 h-full rounded-full" style="width: ${porcA}%"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+                                    <span>Switch B (24p)</span>
+                                    <span>${elemsSwitchB.length}/24</span>
+                                </div>
+                                <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
+                                    <div class="bg-indigo-500 h-full rounded-full" style="width: ${porcB}%"></div>
+                                </div>
+                            </div>
                         </div>
                     </summary>
                     <div class="p-3.5 pt-0 space-y-2 border-t border-slate-800/60 bg-slate-950/30">
@@ -415,77 +524,42 @@ function switchView(viewName, btnElement) {
         btn.className = "nav-btn flex flex-col items-center text-slate-400 hover:text-slate-200 transition";
     });
     if (btnElement) btnElement.className = "nav-btn flex flex-col items-center text-blue-400 transition";
-}
 
-function poblarPuertosSelect(puertoActualForzado = null) {
-    const selectP = document.getElementById('selectPuerto');
-    if (!selectP) return;
-
-    selectP.innerHTML = '<option value="">Seleccione puerto...</option>';
-    for (let i = 1; i <= 24; i++) {
-        const pStr = "P" + (i < 10 ? "0" + i : i);
-        const opt = document.createElement('option');
-        opt.value = pStr;
-        opt.textContent = `Puerto ${i < 10 ? '0' + i : i}`;
-        selectP.appendChild(opt);
+    if (viewName !== 'registrar') {
+        const formEl = document.getElementById('activoForm');
+        if (formEl) formEl.reset();
+        puertoEnEdicionActual = null;
+        const badge = document.getElementById('edit-badge');
+        if (badge) badge.classList.add('hidden');
+        if (typeof toggleCamposDinamicos === 'function') toggleCamposDinamicos();
     }
-    if (puertoActualForzado) selectP.value = puertoActualForzado;
 }
 
 function cargarParaEditarObjeto(nodo) {
     if (!nodo) return;
 
-    console.log("DATOS RECIBIDOS DEL NODO:", nodo);
-
-    // Traductor y normalizador inteligente para corregir el desfase de la BD
-    let item = {
-        hostname: nodo.hostname || nodo.Hostname || nodo.nombre || '',
-        ip: nodo.ip || nodo.IP || '',
-        mac: nodo.mac || nodo.MAC || '',
-        tipo: nodo.tipo || nodo.Tipo || '',
-        marca: nodo.marca || nodo.Marca || '',
-        
-        // Corregimos los campos que venían intercambiados en la nube:
-        rack: nodo.puerto && nodo.puerto.startsWith('P1') || nodo.puerto && nodo.puerto.startsWith('P2') ? nodo.puerto : (nodo.rack || 'P1A'),
-        sw: nodo.cpu && nodo.cpu.includes('SW-') ? nodo.cpu : (nodo.sw || nodo.switch || ''),
-        puerto: nodo.ram && nodo.ram.startsWith('P') ? nodo.ram : (nodo.puerto || ''),
-        patch_panel: nodo.patch_panel || nodo.roseta || '',
-        
-        cpu: nodo.so && nodo.so.includes('Intel') || nodo.so && nodo.so.includes('AMD') ? nodo.so : (nodo.cpu || ''),
-        ram: nodo.office && nodo.office.includes('GB') ? nodo.office : (nodo.ram || ''),
-        almacenamiento: nodo.observaciones && (nodo.observaciones.includes('NVMe') || nodo.observaciones.includes('SSD') || nodo.observaciones.includes('TB')) ? nodo.observaciones : (nodo.almacenamiento || ''),
-        
-        so: nodo.almacenamiento && nodo.almacenamiento.includes('Mint') || nodo.almacenamiento && nodo.almacenamiento.includes('Windows') ? nodo.almacenamiento : (nodo.so || ''),
-        office: nodo.modelo || nodo.office || '',
-        observaciones: nodo.observaciones && !nodo.observaciones.includes('NVMe') ? nodo.observaciones : ''
-    };
-
-    console.log("ITEM NORMALIZADO Y CORREGIDO:", item);
-
-    document.getElementById('inputHostname').value = item.hostname;
-    document.getElementById('inputIp').value = item.ip;
-    document.getElementById('inputMac').value = item.mac;
-    document.getElementById('inputObservaciones').value = item.observaciones;
+    document.getElementById('inputHostname').value = nodo.hostname || '';
+    document.getElementById('inputIp').value = nodo.ip || '';
+    document.getElementById('inputMac').value = nodo.mac || '';
+    document.getElementById('inputObservaciones').value = nodo.observaciones || '';
     
-    // 1. Asignar Rack y filtrar switches correspondientes
-    const rackVal = (item.rack || 'P1A').toString().trim();
+    const rackVal = (nodo.rack || 'P1A').toString().trim();
     const selectRackEl = document.getElementById('formRack');
     if (selectRackEl) {
         selectRackEl.value = rackVal;
         filtrarSwitchesPorRack(rackVal);
     }
     
-    // 2. Asignar Switch y demás campos con retardo para asegurar renderizado del DOM
     setTimeout(() => {
         const selectSwitchEl = document.getElementById('formSwitch');
         if (selectSwitchEl) {
-            selectSwitchEl.value = item.sw || '';
+            selectSwitchEl.value = nodo.sw || '';
         }
     }, 120);
     
-    document.getElementById('selectPatchPanel').value = item.patch_panel;
-    document.getElementById('selectTipo').value = item.tipo;
-    document.getElementById('selectMarca').value = item.marca;
+    document.getElementById('selectPatchPanel').value = nodo.patch_panel || '';
+    document.getElementById('selectTipo').value = nodo.tipo || '';
+    document.getElementById('selectMarca').value = nodo.marca || '';
 
     toggleCamposDinamicos();
 
@@ -511,18 +585,19 @@ function cargarParaEditarObjeto(nodo) {
         }
     }
 
-    seleccionarOInyectar('selectCpu', item.cpu);
-    seleccionarOInyectar('selectRam', item.ram);
-    seleccionarOInyectar('selectCapAlm', item.almacenamiento);
-    seleccionarOInyectar('selectSo', item.so);
-    seleccionarOInyectar('selectOffice', item.office);
+    seleccionarOInyectar('selectCpu', nodo.cpu);
+    seleccionarOInyectar('selectRam', nodo.ram);
+    seleccionarOInyectar('selectCapAlm', nodo.almacenamiento);
+    seleccionarOInyectar('selectSo', nodo.so);
+    seleccionarOInyectar('selectOffice', nodo.office);
 
-    const puertoVal = item.puerto || '';
+    const puertoVal = nodo.puerto || '';
     puertoEnEdicionActual = puertoVal;
     poblarPuertosSelect(puertoVal);
 
     document.getElementById('edit-badge').classList.remove('hidden');
-    const registrarBtn = document.querySelectorAll('.nav-btn')[1];
+    
+    const registrarBtn = document.querySelectorAll('.nav-btn')[2];
     switchView('registrar', registrarBtn);
 }
 
@@ -600,67 +675,42 @@ async function guardarActivoMovil() {
 }
 
 function cancelarEdicion() {
-    document.getElementById('activoForm').reset();
+    const formEl = document.getElementById('activoForm');
+    if (formEl) formEl.reset();
+    
     puertoEnEdicionActual = null;
-    document.getElementById('edit-badge').classList.add('hidden');
-    toggleCamposDinamicos();
-    poblarPuertosSelect();
-    const buscarBtn = document.querySelectorAll('.nav-btn')[0];
+    
+    const badge = document.getElementById('edit-badge');
+    if (badge) badge.classList.add('hidden');
+    
+    if (typeof toggleCamposDinamicos === 'function') toggleCamposDinamicos();
+    if (typeof poblarPuertosSelect === 'function') poblarPuertosSelect();
+    
+    const selectSwitch = document.getElementById('formSwitch');
+    if (selectSwitch) selectSwitch.innerHTML = '<option value="">Seleccione Switch...</option>';
+
+    const buscarBtn = document.querySelectorAll('.nav-btn')[1];
     switchView('consultar', buscarBtn);
 }
 
 function verDetallesObjeto(nodo) {
     if (!nodo) return;
 
-    let item = {};
-    if (Array.isArray(nodo)) {
-        item = {
-            hostname: nodo[0] || '', ip: nodo[1] || '', mac: nodo[2] || '',
-            tipo: nodo[3] || '', marca: nodo[4] || '', modelo: nodo[5] || '',
-            propiedad: nodo[6] || '', rack: nodo[7] || '', sw: nodo[8] || '',
-            puerto: nodo[9] || '', patch_panel: nodo[10] || '', cpu: nodo[11] || '',
-            ram: nodo[12] || '', almacenamiento: nodo[13] || '', so: nodo[14] || '',
-            office: nodo[15] || '', observaciones: nodo[16] || ''
-        };
-    } else {
-        // Si viene como Objeto pero con las llaves cruzadas de la BD:
-        item = {
-            hostname: nodo.hostname || nodo.Hostname || nodo.nombre || '',
-            ip: nodo.ip || nodo.IP || '',
-            mac: nodo.mac || nodo.MAC || '',
-            tipo: nodo.tipo || nodo.Tipo || '',
-            marca: nodo.marca || nodo.Marca || '',
-            
-            // Rescatamos los valores reales de donde se hayan guardado por el desfase:
-            rack: nodo.rack || (nodo.puerto && nodo.puerto.startsWith('P') && nodo.puerto.length === 3 ? nodo.puerto : 'P1A'),
-            sw: nodo.sw || (nodo.cpu && nodo.cpu.includes('SW-') ? nodo.cpu : ''),
-            puerto: nodo.puerto && !nodo.puerto.startsWith('P1') ? nodo.puerto : (nodo.ram || ''),
-            patch_panel: nodo.patch_panel || nodo.roseta || '',
-            cpu: nodo.so && nodo.so.includes('Intel') ? nodo.so : (nodo.cpu || ''),
-            ram: nodo.office && nodo.office.includes('GB') ? nodo.office : (nodo.ram || ''),
-            almacenamiento: nodo.observaciones || nodo.almacenamiento || '',
-            so: nodo.almacenamiento && nodo.almacenamiento.includes('Mint') ? nodo.almacenamiento : '',
-            office: '',
-            observaciones: nodo.observaciones || ''
-        };
-    }
-
-    // Inyectar en el HTML de detalles...
-    document.getElementById('det-hostname').textContent = item.hostname || 'SIN-NOMBRE';
-    document.getElementById('det-tipo-badge').textContent = item.tipo || 'Dispositivo';
-    document.getElementById('det-rack').textContent = item.rack || '-';
-    document.getElementById('det-sw').textContent = item.sw || '-';
-    document.getElementById('det-puerto').textContent = item.puerto || '-';
-    document.getElementById('det-patch').textContent = item.patch_panel || '-';
-    document.getElementById('det-ip').textContent = item.ip || '-';
-    document.getElementById('det-mac').textContent = item.mac || '-';
-    document.getElementById('det-marca').textContent = item.marca || '-';
-    document.getElementById('det-cpu').textContent = item.cpu || '-';
-    document.getElementById('det-ram').textContent = item.ram || '-';
-    document.getElementById('det-alm').textContent = item.almacenamiento || '-';
-    document.getElementById('det-so').textContent = item.so || '-';
-    document.getElementById('det-office').textContent = item.office || '-';
-    document.getElementById('det-obs').textContent = item.observaciones || 'Sin observaciones registradas.';
+    document.getElementById('det-hostname').textContent = nodo.hostname || 'SIN-NOMBRE';
+    document.getElementById('det-tipo-badge').textContent = nodo.tipo || 'Dispositivo';
+    document.getElementById('det-rack').textContent = nodo.rack || '-';
+    document.getElementById('det-sw').textContent = nodo.sw || '-';
+    document.getElementById('det-puerto').textContent = nodo.puerto || '-';
+    document.getElementById('det-patch').textContent = nodo.patch_panel || '-';
+    document.getElementById('det-ip').textContent = nodo.ip || '-';
+    document.getElementById('det-mac').textContent = nodo.mac || '-';
+    document.getElementById('det-marca').textContent = nodo.marca || '-';
+    document.getElementById('det-cpu').textContent = nodo.cpu || '-';
+    document.getElementById('det-ram').textContent = nodo.ram || '-';
+    document.getElementById('det-alm').textContent = nodo.almacenamiento || '-';
+    document.getElementById('det-so').textContent = nodo.so || '-';
+    document.getElementById('det-office').textContent = nodo.office || '-';
+    document.getElementById('det-obs').textContent = nodo.observaciones || 'Sin observaciones registradas.';
 
     const btnEditar = document.getElementById('btn-pasar-editar');
     if (btnEditar) {
@@ -675,12 +725,4 @@ function verDetallesObjeto(nodo) {
 
     const subtitleEl = document.getElementById('header-subtitle');
     if (subtitleEl) subtitleEl.innerText = 'Detalles del Activo';
-}
-
-function ocultarPantallaCarga() {
-    const loader = document.getElementById('loading-screen');
-    if (loader) {
-        loader.classList.add('opacity-0', 'pointer-events-none');
-        setTimeout(() => loader.remove(), 500);
-    }
 }
