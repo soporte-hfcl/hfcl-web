@@ -557,3 +557,145 @@ html, body {
     border-color: var(--accent) !important;
     box-shadow: inset 0 2px 5px rgba(0,0,0,0.9), 0 0 8px var(--accent-glow) !important;
 }
+
+/* ==========================================================================
+   INFRAESTRUCTURA DE RED / SWITCH & PATCH PANELS (Estilos Específicos)
+   ========================================================================== */
+
+/* Chasis Principal (Estilo Cat 2960 Plus) */
+.cisco-switch-chassis { 
+    background-color: #242f38; 
+    border-radius: 6px; 
+    padding: 6px 10px;
+    width: 100%; 
+    box-sizing: border-box; 
+    position: relative; 
+    border: 1px solid #141a21;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+}
+
+.cisco-switch-panel {
+    background-color: #1c252d;
+    border: 1px solid #2f3e4e;
+    border-radius: 4px;
+    padding: 4px 8px; 
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.cisco-switch-ports-area {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 4px 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Panel de LEDs de Estado Cisco */
+.cisco-switch-status-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 4px;
+    background-color: #11171d;
+    padding: 6px 8px;
+    border: 1px solid #090c10;
+    border-radius: 3px;
+    height: 100%;
+}
+
+.cisco-switch-status-block .port-led {
+    width: 16px !important;
+    height: 8px !important;
+    border-radius: 4px !important;
+    background-color: #0b2918 !important;
+}
+
+.cisco-switch-status-block .port-led.enabled, 
+.cisco-switch-status-block .port-led.active {
+    background-color: var(--success) !important;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8), inset 0 0 3px rgba(255, 255, 255, 0.5) !important;
+}
+
+@keyframes led-blink-green {
+    0%, 100% { opacity: 1; filter: brightness(1.4); }
+    50% { opacity: 0.3; filter: brightness(0.6); }
+}
+
+.cisco-switch-status-block .port-led.blinking {
+    animation: led-blink-green 0.4s infinite ease-in-out;
+}
+
+/* LEDs de Triángulo / Conexión */
+.port-led-triangle-up {
+    width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-bottom: 9px solid #0b0f13; margin-bottom: 3px; transition: 0.15s;
+}
+.port-led-triangle-down {
+    width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent;
+    border-top: 9px solid #0b0f13; margin-bottom: 3px; transition: 0.15s;
+}
+.port-led-triangle-up.enabled, .port-led-triangle-up.active { border-bottom-color: var(--success); filter: drop-shadow(0 0 6px var(--success)); }
+.port-led-triangle-down.enabled, .port-led-triangle-down.active { border-top-color: #38f83e; filter: drop-shadow(0 0 4px var(--success)); }
+
+@keyframes led-triangle-blink {
+    0%, 100% { opacity: 1; filter: brightness(1.3) drop-shadow(0 0 5px #38f84b); }
+    50% { opacity: 0.2; filter: brightness(0.5); }
+}
+.port-led-triangle-up.blinking, .port-led-triangle-down.blinking { animation: led-triangle-blink 0.4s infinite ease-in-out; }
+
+/* Simulación Realista de Puertos RJ45 y Patch Panels con Pines Dorados */
+.patch-port, .cisco-port-rj45-top, .cisco-port-rj45-bottom {
+    background-color: #0d1117 !important; 
+    border: 1px solid #30363d !important;
+    position: relative; 
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9), inset 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+.patch-port::before, .cisco-port-rj45-top::before, .cisco-port-rj45-bottom::before {
+    content: ''; 
+    position: absolute; 
+    top: 1px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 35%; 
+    height: 4px; 
+    background-color: #040608; 
+    border-radius: 0 0 2px 2px;
+    border-bottom: 1px solid #21262d; 
+    z-index: 2;
+}
+
+.patch-port::after, .cisco-port-rj45-top::after, .cisco-port-rj45-bottom::after {
+    content: ''; 
+    position: absolute; 
+    width: 60%; 
+    height: 8px;
+    background: repeating-linear-gradient(90deg, #d97706, #d97706 1px, transparent 1px, transparent 2px);
+    opacity: 0.85; 
+    z-index: 1;
+}
+
+.patch-port::after, .cisco-port-rj45-top::after { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.cisco-port-rj45-bottom::after { top: 6px; left: 50%; transform: translateX(-50%); }
+
+.patch-port:hover, .cisco-port-rj45-top:hover, .cisco-port-rj45-bottom:hover {
+    border-color: var(--accent) !important;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.9), 0 0 8px var(--accent-glow) !important;
+}
+
+/* Estructura general de Racks y Ensamblaje */
+.rack-equipment-assembly { 
+    display: flex !important; 
+    flex-direction: column !important; 
+    align-items: center !important; 
+    width: 100% !important; 
+    box-sizing: border-box !important; 
+}
+
+.patch-panel-wrapper { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+.patch-panel-row-container { display: flex !important; justify-content: space-between !important; width: 100% !important; gap: 6px !important; box-sizing: border-box !important; }
+.patch-panel-block-group { display: grid !important; grid-template-columns: repeat(6, 1fr) !important; gap: 2px !important; flex: 1 !important; width: 100% !important; }

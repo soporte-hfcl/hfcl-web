@@ -3,179 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red | HFCL</title>
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/red.css">
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="../assets/img/logo_hfcl.png">
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <title>HFCL - Terreno & Activos Pro (Escritorio)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="saas-body">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-500 selection:text-white">
 
-<!-- DASHBOARD WORKSPACE -->
-<div class="saas-workspace">
-    
-    <!-- PANEL LATERAL DE CONTROL DE IPS -->
-    <aside class="saas-sidebar">
-        <div class="saas-sidebar-title">
-            <span><i class="fas fa-network-wired"></i> Control de IPs / Subred</span>
-        </div>
-        <div class="saas-search">
-            <input type="text" id="netSearchInput" placeholder="Filtrar por IP o Host..." oninput="filterNetworkNodes()">
-        </div>
-        
-        <!-- Pestañas de control de IPs con botones estandarizados -->
-        <div style="display: flex; gap: 4px; margin-top: 4px;">
-            <button class="btn btn-secondary" style="flex:1; font-size: 0.65rem; padding: 6px; color: var(--success);" onclick="switchSidebarTab('nodes')">IPs Libres</button>
-            <button class="btn btn-secondary" style="flex:1; font-size: 0.65rem; padding: 6px; color: var(--accent);" onclick="switchSidebarTab('syslog')">IPs Ocupadas</button>
-        </div>
-
-        <div class="saas-nodes-list" id="netNodesListContainer" style="margin-top: 6px;"></div>
-    </aside>
-
-    <!-- ÁREA CENTRAL DE COMANDO -->
-    <main class="saas-main">
-        
-        <!-- Topología Superior Limpia -->
-        <div class="saas-topo-bar">
-            <div class="saas-topo-label"><i class="fas fa-project-diagram" style="color:var(--accent);"></i> Topología Troncal</div>
-            <div class="saas-topo-nodes" id="topologyBarContainer"></div>
-        </div>
-
-        <!-- Módulo de Chasis Principal Unificado -->
-        <div class="saas-chassis-container">
-            <div class="saas-chassis-header">
-                <div class="chassis-info-group" style="flex-wrap: wrap; gap: 8px;">
-                    <span class="chassis-name" id="activeNodeTitle">SW-PRINCIPAL-CORE</span>
-                    <span class="saas-meta-tag" id="activeIpBadge">10.66.50.1</span>
-                    <button id="nodePowerToggleBtn" class="saas-power-btn" onclick="toggleActiveNodePower()">ONLINE</button>
-                    <span class="saas-meta-tag" id="activeModelBadge" style="background: rgba(56, 189, 248, 0.08); color: var(--accent);">Catalyst 2960 Plus</span>
-                </div>
-                <div class="chassis-actions-group" style="font-family: monospace; font-size: 0.7rem; color: var(--text-muted); display: flex; gap: 10px;">
-                    <span id="headerSerial"><b>S/N:</b> --</span>
-                    <span id="headerMac"><b>MAC:</b> --</span>
-                    <span id="headerRev"><b>REV:</b> 02</span>
-                </div>
-            </div>
-
-            <!-- CONTENEDOR ÚNICO LIMPIO -->
-            <div id="chassisPortsContainer" style="width: 100%;"></div>
-        </div>
-
-        <!-- Fila Inferior de Telemetría Rápida -->
-        <div class="saas-bottom-metrics-advanced">
-            <div class="saas-mini-widget">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Puertos Ocupados</span>
-                    <span style="font-size: 0.55rem; color: var(--accent); font-family: monospace;" id="portsMetricLabel">Global</span>
-                </div>
-                <div class="mini-chart-wrap"><canvas id="portsDoughnutChart"></canvas></div>
-            </div>
-            <div class="saas-mini-widget">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>IPs Subred 10.66.50.X</span>
-                    <span style="font-size: 0.55rem; color: var(--success); font-family: monospace;" id="ipsMetricLabel">Subred</span>
-                </div>
-                <div class="mini-chart-wrap"><canvas id="ipsDoughnutChart"></canvas></div>
-            </div>
-            <div class="saas-mini-widget">
-                <div style="display:flex; justify-content:space-between; font-size:0.5rem; margin-bottom:2px;">
-                    <span style="color:var(--accent);">Tráfico Troncal (Mbps)</span>
-                    <span id="bandwidthLabel" style="color:var(--text-muted);">27.2 Mbps</span>
-                </div>
-                <div class="mini-chart-wrap"><canvas id="liveBwChart"></canvas></div>
-            </div>
-            <div class="saas-mini-widget cli-console-widget">
-                <div class="cli-header-bar">
-                    <span><i class="fas fa-terminal" style="color:var(--accent);"></i> Consola CLI / Syslog</span>
-                    <span class="saas-meta-tag">HFC-Core#</span>
-                </div>
-                <div class="saas-terminal-screen" id="netTerminalScreen">
-                    <div><code>HFC-Core# ready. 'ping 10.66.50.1'</code></div>
-                </div>
-                <input type="text" id="netTerminalInput" placeholder="Escribe un comando..." onkeydown="handleNetTerminal(event)" class="saas-terminal-input">
-            </div>
-        </div>
-
-    </main>
-</div>
-
-<!-- PANEL DESLIZANTE DE CONFIGURACIÓN DE PUERTOS -->
-<div class="saas-drawer" id="portInspectorDrawer">
-    <div class="drawer-header">
-        <span><i class="fas fa-sliders-h"></i> Puerto <span id="inspectedPortNumber">#0</span></span>
-        <div style="display:flex; gap:8px; align-items:center;">
-            <button id="inspectedPortStateBtn" class="saas-power-btn" onclick="togglePortStatus()">HABILITADO</button>
-            <button class="drawer-close" onclick="closePortInspector()">✕</button>
-        </div>
+    <!-- ================= NAVBAR INSTITUCIONAL (SUPERIOR) ================= -->
+    <div id="navbar-container">
+        <!-- El script de navbar.js inyectará la barra superior institucional aquí -->
     </div>
-    <div class="drawer-body" id="portInspectorFormBody"></div>
-</div>
 
-<script src="../js/red.js"></script>
+    <!-- ================= CONTENEDOR INFERIOR (SIDEBAR + CONTENIDO PRINCIPAL) ================= -->
+    <div class="flex flex-1 min-h-[calc(100vh-64px)]">
 
-<!-- MODAL DE FICHA TÉCNICA DE INVENTARIO (Estandarizado con la capa overlay del main.css) -->
-<div id="assetInventoryModal" class="modal-overlay">
-    <div style="background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-lg); width: 580px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-        
-        <!-- Cabecera de la Ficha -->
-        <div style="background: var(--surface-main); padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.8rem; color: var(--accent); font-weight: 700; font-family: monospace;">
-                <i class="fas fa-laptop-medical"></i> Ficha de Inventario • <span id="modalAssetIp">10.66.50.X</span>
-            </span>
-            
-            <!-- Botones de Acción (Editar y Cerrar) -->
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <button id="editToggleBtn" onclick="toggleAssetEditMode()" style="background: transparent; border: none; color: var(--text-muted); font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text-muted)'">
-                    <i class="fas fa-lock" id="editToggleIcon"></i> <span id="editToggleText">Modo Lectura</span>
+        <!-- BARRA LATERAL IZQUIERDA (DEBAJO DEL NAVBAR) -->
+        <aside class="w-72 bg-slate-900/90 border-r border-slate-800 flex flex-col justify-between p-5 sticky top-16 h-[calc(100vh-64px)] z-30 shrink-0">
+            <div class="space-y-6">
+                <!-- Bloque NOC / Estado -->
+                <div class="flex items-center space-x-3.5 pb-4 border-b border-slate-800">
+                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                        <i class="fas fa-satellite-dish text-base animate-pulse"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h1 class="text-xs font-bold text-slate-100 tracking-wide truncate">NOC Escritorio</h1>
+                        <p id="status-sincronizacion" class="text-[10px] text-emerald-400 font-mono truncate">Conectado a Sheets</p>
+                    </div>
+                </div>
+
+                <!-- Menú de Navegación Vertical (Sin Dashboard) -->
+                <nav class="space-y-2">
+                    <button onclick="switchView('consultar', this)" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 transition flex items-center space-x-3 text-left">
+                        <i class="fas fa-search w-4 text-center text-sm"></i>
+                        <span>Buscar & Tabla</span>
+                    </button>
+                    <button onclick="switchView('registrar', this)" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition flex items-center space-x-3 text-left">
+                        <i class="fas fa-plus-circle w-4 text-center text-sm"></i>
+                        <span>Registrar Activo</span>
+                    </button>
+                    <button onclick="switchView('racks', this)" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition flex items-center space-x-3 text-left">
+                        <i class="fas fa-server w-4 text-center text-sm"></i>
+                        <span>Racks & Gabinetes</span>
+                    </button>
+                    <button onclick="switchView('redes', this)" class="nav-btn w-full px-4 py-3 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition flex items-center space-x-3 text-left">
+                        <i class="fas fa-wifi w-4 text-center text-sm"></i>
+                        <span>Wi-Fi & SMB</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Botón de Sincronización en la parte inferior de la barra lateral -->
+            <div class="pt-4 border-t border-slate-800">
+                <button type="button" onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl text-xs border border-slate-700 transition flex items-center justify-center space-x-2 shadow-sm" title="Forzar Sincronización">
+                    <i class="fas fa-sync-alt text-xs text-blue-400"></i>
+                    <span class="font-medium">Sincronizar Cloud</span>
                 </button>
-                <div style="width: 1px; height: 14px; background: var(--border);"></div>
-                <button onclick="closeAssetInventoryModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--text-muted)'">✕</button>
+            </div>
+        </aside>
+
+        <!-- ================= CONTENIDO PRINCIPAL A LA DERECHA ================= -->
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-950">
+            <!-- Contenedor principal con max-w-7xl y mx-auto -->
+            <main class="p-8 flex-1 w-full max-w-7xl mx-auto space-y-6">
+
+                <!-- ================= VISTA 1: CONSULTAR / BUSCAR (TABLA AMPLIA) ================= -->
+                <div id="view-consultar" class="space-y-4 view-section">
+                    <div class="relative max-w-xl">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="globalSearch" placeholder="Buscar por IP, Hostname, MAC, Rack o Activo..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-xs focus:outline-none focus:border-blue-500 text-slate-200 placeholder-slate-500 shadow-inner font-mono">
+                    </div>
+                    <div id="resultadosRedContainer" class="space-y-3"></div>
+                </div>
+
+                <!-- ================= VISTA 2: REGISTRAR / EDITAR FORMULARIO ================= -->
+                <div id="view-registrar" class="space-y-4 view-section hidden">
+                    <form id="activoForm" class="space-y-6 bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl max-w-4xl mx-auto">
+                        <div class="space-y-4">
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2">1. Red y Ubicación Física</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Rack</label>
+                                    <select id="formRack" onchange="filtrarSwitchesPorRack()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                        <option value="">Seleccione Rack...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Switch</label>
+                                    <select id="formSwitch" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                        <option value="">Seleccione Switch...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Puerto Switch</label>
+                                    <select id="selectPuerto" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                        <option value="">Seleccione puerto...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Patch Panel / Roseta</label>
+                                    <select id="selectPatchPanel" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                        <option value="">Seleccione roseta...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2">2. Datos Únicos</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Hostname</label>
+                                    <input type="text" id="inputHostname" placeholder="PC-OIRS-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono uppercase">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">IP</label>
+                                    <input type="text" id="inputIp" placeholder="10.10.X.X" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">MAC</label>
+                                    <input type="text" id="inputMac" placeholder="XX:XX:XX..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400 border-b border-slate-800 pb-2">3. Clasificación y Hardware</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Tipo de Dispositivo</label>
+                                    <select id="selectTipo" onchange="toggleCamposDinamicos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                        <option value="">Seleccione tipo...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">Marca</label>
+                                    <select id="selectMarca" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                        <option value="">Seleccione marca...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="camposComputador" class="space-y-4 hidden pt-3 border-t border-slate-800">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Procesador (CPU)</label>
+                                        <select id="selectCpu" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                            <option value="">Seleccione CPU...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Memoria RAM</label>
+                                        <select id="selectRam" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                            <option value="">Seleccione RAM...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Tipo Almacenamiento</label>
+                                        <select id="selectTipoAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                            <option value="">Seleccione tipo...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Capacidad Disco</label>
+                                        <select id="selectCapAlm" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-mono">
+                                            <option value="">Seleccione capacidad...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Sistema Operativo</label>
+                                        <select id="selectSo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                            <option value="">Seleccione SO...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-slate-400 mb-1">Licencia Office</label>
+                                        <select id="selectOffice" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200">
+                                            <option value="">Seleccione Office...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-blue-400">4. Observaciones</label>
+                            <textarea id="inputObservaciones" rows="3" placeholder="Detalles de ubicación, estado de red o notas..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500"></textarea>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 pt-2">
+                            <button type="button" onclick="cancelarEdicion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-6 py-3 rounded-xl text-xs border border-slate-700 transition shadow-md">
+                                Cancelar ✖
+                            </button>
+                            <button type="button" onclick="guardarActivoPC()" class="...">
+    Guardar Activo
+</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ================= VISTA 3: ESTADO DE RACKS ================= -->
+                <!-- ================= VISTA 3: ESTADO DE RACKS ================= -->
+<div id="view-racks" class="space-y-6 view-section hidden">
+    <!-- Encabezado y Selector de Gabinetes -->
+    <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-blue-400">Racks & Gabinetes - Hospital Lanco</h2>
+            <p class="text-xs text-slate-400">Monitoreo de troncales, switches y patch panels en terreno</p>
+        </div>
+        <!-- Selector rápido de Racks -->
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="seleccionarRack('P1-A')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 transition">P1-A</button>
+            <button type="button" onclick="seleccionarRack('P1-B')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">P1-B</button>
+            <button type="button" onclick="seleccionarRack('P1-C')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">P1-C</button>
+            <button type="button" onclick="seleccionarRack('P2-A')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">P2-A</button>
+            <button type="button" onclick="seleccionarRack('P2-B')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">P2-B</button>
+            <button type="button" onclick="seleccionarRack('P2-C')" class="rack-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200 transition">P2-C</button>
+        </div>
+    </div>
+
+    <!-- Contenedor Estilo Chasis del Rack -->
+    <div class="bg-slate-900/60 border-2 border-slate-800 rounded-2xl p-6 shadow-2xl space-y-6">
+        
+        <!-- Bloque Troncal / Core -->
+        <div class="bg-slate-950 border border-slate-800/80 p-4 rounded-xl flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div>
+                    <span class="text-[10px] font-mono text-slate-500 uppercase">Troncal Superior</span>
+                    <h3 class="text-xs font-bold text-slate-200 font-mono">Core Router / Gateway (10.66.50.1)</h3>
+                </div>
+            </div>
+            <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded border border-emerald-500/20">Activo / Enlace OK</span>
+        </div>
+
+        <!-- Módulo del Switch Cisco Catalyst Realista -->
+        <div class="bg-neutral-950 border-2 border-neutral-800 rounded-xl p-5 shadow-inner space-y-4">
+            <div class="flex justify-between items-center border-b border-neutral-800 pb-2">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                    <span class="text-xs font-mono font-bold text-neutral-200 uppercase">Cisco Catalyst 2960 Plus - Switch Principal</span>
+                </div>
+                <div class="flex items-center space-x-2 text-[10px] font-mono text-neutral-400">
+                    <span>SYS LED: <b class="text-green-400">Normal</b></span>
+                    <span>RPS: <b class="text-neutral-500">Standby</b></span>
+                </div>
+            </div>
+
+            <!-- Contenedor de Puertos RJ45 del Switch (Renderizado Dinámico desde red.js) -->
+            <div id="switch-ports-grid" class="grid grid-cols-12 sm:grid-cols-24 gap-1.5 bg-neutral-900 p-3 rounded-lg border border-neutral-800 font-mono text-[9px]">
+                <!-- Los puertos del switch se inyectarán aquí automáticamente -->
             </div>
         </div>
 
-        <div class="drawer-body" id="assetInventoryFormBody" style="padding: 16px; overflow-y: auto; flex: 1;"></div>
+        <!-- Módulos de Patch Panels (Datos y Voz) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Patch Panel Datos (1U) -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-blue-400 uppercase font-mono">Patch Panel Datos (D01 - D60)</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">Clic izq: Enlazar | Clic der: Limpiar</span>
+                </div>
+                <div id="patch-data-grid" class="grid grid-cols-6 sm:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto p-1 bg-slate-900/50 rounded-lg border border-slate-800/80">
+                    <!-- Inyección dinámica -->
+                </div>
+            </div>
+
+            <!-- Patch Panel Voz (1U) -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-amber-400 uppercase font-mono">Patch Panel Voz (V01 - V48)</h4>
+                    <span class="text-[10px] text-slate-500 font-mono">Central Telefónica IP</span>
+                </div>
+                <div id="patch-voice-grid" class="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-48 overflow-y-auto p-1 bg-slate-900/50 rounded-lg border border-slate-800/80">
+                    <!-- Inyección dinámica -->
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<!-- MODAL DE GESTIÓN RÁPIDA APs E IMPRESORAS -->
-<div class="saas-drawer" id="managedDevicesModal" style="width: 480px; right: -500px;">
-    <div class="drawer-header">
-        <span><i class="fas fa-print"></i> Dispositivos Web (AP & Impresoras)</span>
-        <button class="drawer-close" onclick="closeManagedModal()">✕</button>
-    </div>
-    <div class="drawer-body" id="managedDevicesBody" style="padding: 16px; overflow-y: auto;"></div>
-</div>
+                <!-- ================= VISTA 4: DETALLES DE EQUIPO ================= -->
+                <div id="view-detalles" class="space-y-4 view-section hidden">
+                    <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl space-y-5 max-w-3xl mx-auto">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                            <div>
+                                <span id="det-tipo-badge" class="text-[10px] bg-blue-500/15 text-blue-400 px-2.5 py-1 rounded font-mono font-semibold">Dispositivo</span>
+                                <h2 id="det-hostname" class="text-lg font-bold text-slate-100 mt-1">HOSTNAME</h2>
+                            </div>
+                            <button type="button" onclick="switchView('consultar', document.querySelectorAll('.nav-btn')[0])" class="text-slate-400 hover:text-slate-200 text-xs bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 transition">
+                                Volver ✕
+                            </button>
+                        </div>
 
-<!-- VENTANA FLOTANTE DE ALERTA DE SEGURIDAD (PORT SECURITY / MAC NUEVA) -->
-<div id="securityAlertModal" class="saas-drawer" style="width: 420px; right: -450px; background: #1a0f0f; border-left: 2px solid var(--danger); z-index: 2000;">
-    <div class="drawer-header" style="border-bottom-color: rgba(239, 68, 68, 0.3);">
-        <span style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> ¡Alerta de Seguridad en Red!</span>
-        <button class="drawer-close" onclick="closeSecurityAlert()">✕</button>
-    </div>
-    <div class="drawer-body" style="padding: 16px; color: #f8fafc;">
-        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 6px; margin-bottom: 12px;">
-            <div style="font-size: 0.65rem; font-weight: 700; color: var(--danger); margin-bottom: 4px;">Dispositivo Desconocido Detectado</div>
-            <p style="font-size: 0.55rem; color: #cbd5e1; line-height: 1.4;">Se ha interceptado una dirección física (MAC) intentando asociarse a la subred activa sin registro previo en los switches del hospital.</p>
-        </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 8px; font-family: monospace; font-size: 0.6rem; background: var(--surface-main); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
-            <div><span style="color: var(--text-muted);">MAC Detectada:</span> <b id="alertMacVal" style="color: var(--danger);">AA:BB:CC:DD:EE:FF</b></div>
-            <div><span style="color: var(--text-muted);">IP Asignada:</span> <b id="alertIpVal" style="color: var(--accent);">10.66.50.88</b></div>
-            <div><span style="color: var(--text-muted);">Puerto Estimado:</span> <b id="alertPortVal">Rack P1-B / Puerto #4</b></div>
-        </div>
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Ubicación y Red</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
+                                <div>Rack: <span id="det-rack" class="text-slate-200 font-bold">-</span></div>
+                                <div>Switch: <span id="det-sw" class="text-slate-200 font-bold">-</span></div>
+                                <div>Puerto: <span id="det-puerto" class="text-blue-400 font-bold">-</span></div>
+                                <div>Patch Panel: <span id="det-patch" class="text-slate-200 font-bold">-</span></div>
+                                <div class="col-span-2 pt-2 border-t border-slate-800/40">IP: <span id="det-ip" class="text-emerald-400 font-bold">-</span></div>
+                                <div class="col-span-2 pt-2 border-t border-slate-800/40">MAC: <span id="det-mac" class="text-slate-300">-</span></div>
+                            </div>
+                        </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 16px;">
-            <button class="btn btn-primary" style="flex: 1; background: var(--danger); border-color: var(--danger); font-size: 0.65rem; padding: 8px;" onclick="blockUnauthorizedDevice()">Bloquear Puerto (ErrDisable)</button>
-            <button class="btn btn-secondary" style="flex: 1; font-size: 0.65rem; padding: 8px;" onclick="closeSecurityAlert()">Ignorar / Registrar</button>
+                        <div id="seccion-hardware" class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Hardware y Software</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs bg-slate-950/60 p-4 rounded-xl border border-slate-800/60">
+                                <div>Marca: <span id="det-marca" class="text-slate-200 font-medium">-</span></div>
+                                <div>CPU: <span id="det-cpu" class="text-slate-200 font-mono">-</span></div>
+                                <div>RAM: <span id="det-ram" class="text-slate-200 font-mono">-</span></div>
+                                <div>Almacenamiento: <span id="det-alm" class="text-slate-200 font-mono">-</span></div>
+                                <div>Sistema Operativo: <span id="det-so" class="text-slate-200">-</span></div>
+                                <div>Office: <span id="det-office" class="text-slate-200">-</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-400">Observaciones</h3>
+                            <p id="det-obs" class="text-xs bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 text-slate-300 italic min-h-[50px]">Sin observaciones registradas.</p>
+                        </div>
+
+                        <div class="pt-3 flex justify-end">
+                            <button type="button" id="btn-pasar-editar" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl text-xs shadow-lg shadow-blue-900/40 transition flex items-center space-x-2">
+                                <i class="fas fa-edit"></i>
+                                <span>Editar este equipo ✏️</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= VISTA 5: REDES WI-FI Y ACCESOS ================= -->
+                <div id="view-redes" class="space-y-4 view-section hidden">
+                    <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl shadow-xl flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">Wi-Fi & Accesos de Red</h2>
+                            <p class="text-xs text-slate-400">Gestión estructurada corporativa</p>
+                        </div>
+                        <i class="fas fa-network-wired text-cyan-400 text-lg"></i>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-1.5 rounded-2xl border border-slate-800 max-w-md">
+                        <button type="button" onclick="cambiarSubTabRedes('ssid')" id="subtab-btn-ssid" class="py-2.5 text-xs font-bold rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 transition flex items-center justify-center space-x-2">
+                            <i class="fas fa-wifi text-xs"></i>
+                            <span>Redes Wi-Fi</span>
+                        </button>
+                        <button type="button" onclick="cambiarSubTabRedes('accesos')" id="subtab-btn-accesos" class="py-2.5 text-xs font-medium rounded-xl text-slate-400 hover:text-slate-200 transition flex items-center justify-center space-x-2">
+                            <i class="fas fa-folder-open text-xs"></i>
+                            <span>Carpetas Red (SMB)</span>
+                        </button>
+                    </div>
+
+                    <div class="relative max-w-xl">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                            <i class="fas fa-search text-xs"></i>
+                        </span>
+                        <input type="text" id="input-buscar-redes" placeholder="Filtrar por sector, SSID, usuario o carpeta..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition shadow-inner">
+                    </div>
+
+                    <div id="subview-ssid" class="space-y-3">
+                        <div id="lista-redes-ssid" class="space-y-3"></div>
+                    </div>
+
+                    <div id="subview-accesos" class="space-y-3 hidden">
+                        <div id="lista-accesos-red" class="space-y-3"></div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
-</div>
+
+    <!-- Scripts de Conexión y Lógica -->
     <script src="../data/auth.js"></script>
     <script src="../data/navbar.js"></script>
+    <script src="../data/cloud-db.js"></script>
     <script src="../js/red.js"></script>
 </body>
 </html>

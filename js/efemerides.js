@@ -58,10 +58,12 @@ const todasLasEfemerides = [
     { mes: 9, dia: 10, titulo: "Día Mundial para la Prevención del Suicidio", desc: "Estrategias de apoyo y salud mental comunitaria.", colorBg: "#fee2e2", colorTxt: "#ef4444" },
     { mes: 9, dia: 17, titulo: "Día Mundial de la Seguridad del Paciente", desc: "Estándares de calidad y atención clínica segura.", colorBg: "#e0f2fe", colorTxt: "#0284c7" },
     { mes: 9, dia: 21, titulo: "Día Mundial del Alzheimer", desc: "Sensibilización sobre demencias y apoyo a cuidadores.", colorBg: "#f3e8ff", colorTxt: "#9333ea" },
+    { mes: 9, dia: 25, titulo: "Día Mundial del Farmacéutico", desc: "Reconocimiento al rol de los profesionales de farmacia en la salud y el cuidado de las personas.", colorBg: "#dcfce7", colorTxt: "#16a34a" },
     { mes: 9, dia: 27, titulo: "Día Nacional de la Odontología", desc: "Homenaje a los cirujanos dentistas de la red.", colorBg: "#e0f2fe", colorTxt: "#0284c7" },
+    { mes: 9, dia: 29, titulo: "Día Mundial del Corazón", desc: "Concientización sobre enfermedades cardiovasculares, prevención y cuidado de la salud cardíaca.", colorBg: "#fee2e2", colorTxt: "#dc2626" },
 
     // Octubre
-    { mes: 10, dia: 1, titulo: "Día Nacional del Tecnólogo Médico", desc: "Destacando el rol clave en laboratorios, imagenología y diagnóstico.", colorBg: "#e0f2fe", colorTxt: "#9333ea" },
+    { mes: 10, dia: 2, titulo: "Día Nacional del Tecnólogo Médico", desc: "Destacando el rol clave en laboratorios, imagenología y diagnóstico.", colorBg: "#e0f2fe", colorTxt: "#9333ea" },
     { mes: 10, dia: 3, titulo: "Día Nacional del Hospital", desc: "¡Feliz aniversario a toda nuestra comunidad hospitalaria de Lanco!", colorBg: "#e0f2fe", colorTxt: "#0284c7" },
     { mes: 10, dia: 10, titulo: "Día Mundial de la Salud Mental", desc: "Promoción del bienestar psicológico y psiquiátrico.", colorBg: "#fee2e2", colorTxt: "#ef4444" },
     { mes: 10, dia: 12, titulo: "Día Mundial de los Cuidados Paliativos", desc: "Acompañamiento y dignidad en la atención clínica.", colorBg: "#f3e8ff", colorTxt: "#9333ea" },

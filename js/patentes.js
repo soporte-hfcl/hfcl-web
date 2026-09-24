@@ -173,6 +173,42 @@ function buscarPatente() {
             console.warn("⚠️ La base de datos de contactos está vacía o el vehículo no tiene RUT.");
         }
 
+let htmlLlamada = `Anexo: ${anexoPropietario}`;
+        let anexoLimpio = String(anexoPropietario).replace(/[^0-9]/g, "");
+        
+        if (anexoPropietario && anexoPropietario !== "S/N" && anexoLimpio.length > 0) {
+            let numeroParaTel = anexoLimpio;
+            let numInt = parseInt(anexoLimpio, 10);
+
+            // Convertimos el anexo corto a numeración externa según los rangos del hospital
+            if (!isNaN(numInt)) {
+                if (numInt >= 634000 && numInt <= 634799) {
+                    // Si el anexo ya viene con el prefijo "63", o si está dentro del rango base
+                    // Aplicamos la regla: 63 2 26 xxxx
+                    // (Si tus anexos ingresados son solo las últimas cifras o el número completo, ajustamos la extracción)
+                }
+            }
+
+            // Lógica robusta aplicando tus rangos exactos (asumiendo que ingresan el número base del anexo)
+            let prefijoExterno = "";
+            
+            // Evaluamos según los rangos proporcionados
+            if ((numInt >= 4000 && numInt <= 4799) || (numInt >= 634000 && numInt <= 634799)) {
+                // Rango 1: 63 2 26 xxxx (Tomamos los últimos 4 dígitos si viene completo o usamos el número)
+                let ultimosDigitos = anexoLimpio.slice(-4);
+                prefijoExterno = "+5663226" + ultimosDigitos;
+            } else if ((numInt >= 5900 && numInt <= 6379) || (numInt >= 635900 && numInt <= 636379)) {
+                // Rango 2: 63 2 68 xxxx
+                let ultimosDigitos = anexoLimpio.slice(-4);
+                prefijoExterno = "+5663268" + ultimosDigitos;
+            } else {
+                // Fallback por si hay algún anexo fuera de rango o formato estándar
+                prefijoExterno = "+56" + anexoLimpio;
+            }
+
+            htmlLlamada = `Anexo: <a href="tel:${prefijoExterno}" style="color: #0284c7; text-decoration: none; font-weight: 600;" title="Llamar al anexo desde celular"><i class="fas fa-phone-alt" style="font-size: 0.8rem; margin-right: 3px;"></i>${anexoPropietario}</a>`;
+        }
+
         contenedor.innerHTML = `
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -181,7 +217,7 @@ function buscarPatente() {
                 </div>
                 <div style="font-size: 0.9rem; color: #0f172a; margin-top: 4px; line-height: 1.5;">
                     👤 Propietario: <strong>${nombrePropietario}</strong><br>
-                    🏥 Servicio / Unidad: <strong>${servicioPropietario}</strong> (Anexo: ${anexoPropietario})<br>
+                    🏥 Servicio / Unidad: <strong>${servicioPropietario}</strong> (${htmlLlamada})<br>
                     🚗 Vehículo: <strong>${encontrado.tipo || 'Vehículo'} - ${encontrado.marca || ''} ${encontrado.modelo || ''}</strong><br>
                     🎨 Color: <strong>${encontrado.color || 'No especificado'}</strong>
                 </div>
